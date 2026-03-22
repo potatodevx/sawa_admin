@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "SAWA Admin Console",
   description:
     "Premium administrative portal for SAWA. Manage chat prompts, user communities, reports, and connections with complete security and ease.",
-  metadataBase: new URL("https://sawa-admin.vercel.app"), // Placeholder, Vercel will override
+  metadataBase: new URL("https://sawa-app-admin.vercel.app"),
   openGraph: {
     title: "SAWA Admin Console",
     description: "Secure management portal for the SAWA mobile ecosystem.",
