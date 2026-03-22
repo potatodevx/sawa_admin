@@ -67,39 +67,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="glassCard">
-          <h3 className="sectionTitle">Library Status</h3>
-          <table className="dataTable">
-            <thead>
-              <tr>
-                <th>Prompt</th>
-                <th style={{ textAlign: 'right' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {prompts.length > 0 ? (
-                prompts.slice(0, 6).map((prompt) => (
-                  <tr key={prompt.id}>
-                    <td style={{ fontWeight: 500 }}>{prompt.title}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <span
-                        className={statusClass(
-                          prompt.active ? "active" : "inactive",
-                        )}
-                      >
-                        {prompt.active ? "Live" : "Paused"}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={2} style={{ textAlign: 'center', padding: '2rem', color: 'var(--ink-muted)' }}>No prompts available.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </section>
+
       </div>
     </AdminShell>
   );
