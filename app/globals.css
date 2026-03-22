@@ -8,6 +8,9 @@
   --panel-soft: #FFFFFF;
   --bg-app: #FFFBEF;
   --stroke: #E8E8E8;
+  --border: #E8E8E8;
+  --surface-2: #F8F8FB;
+  --accent: #1E5559;
   --accent-warm: #D09B64;
   --accent-cool: #1E5559;
   --accent-good: #43A3B2;
@@ -127,6 +130,16 @@ h4 {
 .chipNeutral {
   color: #111111;
   background: #F4F4F7;
+}
+
+.chipSuccess {
+  color: #14532d;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.chipDanger {
+  color: #7f1d1d;
+  background: rgba(239, 68, 68, 0.12);
 }
 
 .control {
