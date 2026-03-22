@@ -42,9 +42,19 @@ export default function DashboardPage() {
       <div className={styles.layout}>
         <section className="glassCard">
           <h3 className="sectionTitle">Recent Activities</h3>
-          <div className="stack" style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          <div 
+            className="stack" 
+            style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '0.6rem',
+              maxHeight: '400px',
+              overflowY: 'auto',
+              paddingRight: '0.5rem'
+            }}
+          >
             {activities.length > 0 ? (
-              activities.slice(0, 5).map((item) => (
+              activities.map((item) => (
                 <article className={styles.activityRow} key={item.id}>
                   <div>
                     <strong style={{ display: 'block', fontSize: '1rem' }}>{item.title}</strong>

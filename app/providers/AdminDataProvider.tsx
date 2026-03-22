@@ -29,6 +29,7 @@ interface AdminContextType {
   deletePrompt: (id: string) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   deleteCommunity: (id: string) => Promise<void>;
+  sendNotification: (title: string, message: string, recipientIds?: string[]) => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -198,6 +199,24 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const sendNotification = async (title: string, message: string, recipientIds?: string[]) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/notifications`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ title, message, recipientIds }),
+      });
+      if (!res.ok) throw new Error("Failed to send notification");
+    } catch (err) {
+      console.error("Send Notification Error:", err);
+      throw err;
+    }
+  };
+
   return (
     <AdminContext.Provider
       value={{
@@ -217,6 +236,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         deletePrompt,
         deleteUser,
         deleteCommunity,
+        sendNotification,
       }}
     >
       {children}

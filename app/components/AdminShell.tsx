@@ -12,6 +12,7 @@ const navItems = [
   { href: "/users", label: "Users", icon: "mdi-account-group" },
   { href: "/communities", label: "Communities", icon: "mdi-google-circles-communities" },
   { href: "/prompts", label: "Chat Prompts", icon: "mdi-chat-question" },
+  { href: "/notifications", label: "Send Notifications", icon: "mdi-bell-ring" },
   { href: "/reports", label: "Reports", icon: "mdi-alert-octagon" },
 ];
 
@@ -100,10 +101,6 @@ export function AdminShell({ children, title, subtitle }: SidebarProps) {
           <div>
             <h2 className={styles.pageTitle}>{title}</h2>
             <p className={styles.pageSubtitle}>{subtitle}</p>
-          </div>
-          <div className={styles.headerBadge}>
-            <span className={styles.statusDot}></span>
-            System Active
           </div>
         </header>
 
