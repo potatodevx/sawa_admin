@@ -26,10 +26,7 @@ export default function DashboardPage() {
           <div className="widgetLabel">Communities</div>
           <div className="widgetValue">{stats.totalCommunities}</div>
         </article>
-        <article className="widgetCard">
-          <div className="widgetLabel">Live Prompts</div>
-          <div className="widgetValue">{stats.totalPrompts}</div>
-        </article>
+
         <article className="widgetCard">
           <div className="widgetLabel">Active Today</div>
           <div className="widgetValue">{stats.activeToday}</div>
