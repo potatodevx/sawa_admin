@@ -1,0 +1,34 @@
+.layout {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 1rem;
+}
+
+.activityRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 13px;
+  padding: 0.7rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.activityRow p {
+  margin: 0.35rem 0 0;
+  color: #cde0ff;
+}
+
+.activityRow time {
+  margin-top: 0.4rem;
+  display: block;
+  color: #c6daff;
+  opacity: 0.8;
+  font-size: 0.84rem;
+}
+
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

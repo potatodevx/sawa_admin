@@ -1,26 +1,174 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink-1: #fef9ea;
+  --ink-2: #d9e5ff;
+  --panel: rgba(12, 22, 42, 0.85);
+  --panel-soft: rgba(255, 255, 255, 0.07);
+  --stroke: rgba(255, 255, 255, 0.16);
+  --accent-warm: #ffb86a;
+  --accent-cool: #7fd4ff;
+  --accent-good: #9ff4bf;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  margin: 0;
+  min-height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink-1);
+  font-family: var(--font-dm-sans), sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-sora), sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.widgetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.widgetCard {
+  border-radius: 16px;
+  padding: 0.9rem;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--stroke);
+  animation: riseIn 400ms ease both;
+}
+
+.widgetLabel {
+  font-size: 0.82rem;
+  color: var(--ink-2);
+  opacity: 0.92;
+}
+
+.widgetValue {
+  margin-top: 0.45rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.glassCard {
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  padding: 1rem;
+}
+
+.sectionTitle {
+  margin: 0 0 0.8rem;
+  font-size: 1.05rem;
+}
+
+.stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.93rem;
+}
+
+.dataTable th,
+.dataTable td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: left;
+  padding: 0.68rem 0.35rem;
+}
+
+.dataTable th {
+  color: #c7daf9;
+  font-weight: 600;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.78rem;
+  border: 1px solid;
+}
+
+.chipActive {
+  color: #d9ffea;
+  border-color: rgba(159, 244, 191, 0.6);
+  background: rgba(159, 244, 191, 0.15);
+}
+
+.chipWarning {
+  color: #ffe8cf;
+  border-color: rgba(255, 184, 106, 0.7);
+  background: rgba(255, 184, 106, 0.13);
+}
+
+.chipNeutral {
+  color: #d7e3fa;
+  border-color: rgba(127, 212, 255, 0.52);
+  background: rgba(127, 212, 255, 0.12);
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}
+
+.control {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  padding: 0.64rem 0.75rem;
+}
+
+.control::placeholder {
+  color: rgba(220, 231, 255, 0.65);
+}
+
+.buttonPrimary {
+  border: 0;
+  border-radius: 12px;
+  padding: 0.67rem 0.95rem;
+  cursor: pointer;
+  font-weight: 700;
+  color: #1c1600;
+  background: linear-gradient(130deg, #ffd58d, #ffb86a);
+}
+
+.buttonGhost {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  padding: 0.56rem 0.8rem;
+  cursor: pointer;
+  color: #edf4ff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
