@@ -50,4 +50,14 @@ export interface DashboardStats {
   totalCommunities: number;
   totalPrompts: number;
   activeToday: number;
+  pendingReports?: number;
+}
+
+export interface ReportItem {
+  id: string;
+  reporter: string;
+  target: string;
+  reason: string;
+  status: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
+  createdAt: string;
 }

@@ -1,37 +1,74 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, type ReactNode } from "react";
 import styles from "./AdminShell.module.css";
+import { SawaBrandLogo } from "./SawaBrandLogo";
+import { useAdminData } from "../providers/AdminDataProvider";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/prompts", label: "Prompts" },
-  { href: "/users", label: "Users" },
-  { href: "/couples", label: "Couples" },
-  { href: "/activities", label: "Activities" },
-  { href: "/communities", label: "Communities" },
+  { href: "/dashboard", label: "Dashboard", icon: "mdi-view-dashboard" },
+  { href: "/users", label: "Users", icon: "mdi-account-group" },
+  { href: "/communities", label: "Communities", icon: "mdi-google-circles-communities" },
+  { href: "/prompts", label: "Chat Prompts", icon: "mdi-chat-question" },
+  { href: "/reports", label: "Reports", icon: "mdi-alert-octagon" },
 ];
 
-export function AdminShell({
-  title,
-  subtitle,
-  children,
-}: {
+interface SidebarProps {
   title: string;
   subtitle: string;
   children: ReactNode;
-}) {
+}
+
+export function AdminShell({ children, title, subtitle }: SidebarProps) {
+  const { logout, isAuthenticated, isLoading } = useAdminData();
+  const router = useRouter();
   const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && pathname !== "/login") {
+      router.push("/login");
+    }
+  }, [isAuthenticated, isLoading, pathname, router]);
+
+  // Close mobile menu on navigation
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
+  if (isLoading) return null;
+  if (!isAuthenticated && pathname !== "/login") return null;
 
   return (
     <div className={styles.root}>
       <div className={styles.backgroundAura} />
-      <aside className={styles.sidebar}>
+      
+      {/* Mobile Header */}
+      <header className={styles.mobileHeader}>
+        <div className={styles.mobileBrand}>
+          <SawaBrandLogo size={32} />
+          <span>SAWA</span>
+        </div>
+        <button 
+          className={styles.burger} 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          <div className={`${styles.burgerIcon} ${isMobileMenuOpen ? styles.open : ""}`}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </button>
+      </header>
+
+      {/* Sidebar / Mobile Nav */}
+      <aside className={`${styles.sidebar} ${isMobileMenuOpen ? styles.mobileOpen : ""}`}>
         <div className={styles.brandBlock}>
-          <p className={styles.brandEyebrow}>SAWA ADMIN</p>
-          <h1 className={styles.brandTitle}>Command Center</h1>
+          <SawaBrandLogo size={48} />
+          <h1 className={styles.brandTitle} style={{ marginTop: '0.5rem' }}>SAWA</h1>
+          <p className={styles.brandSubtitle}>ADMIN DASHBOARD</p>
         </div>
 
         <nav className={styles.nav}>
@@ -43,15 +80,18 @@ export function AdminShell({
                 href={item.href}
                 className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`}
               >
-                {item.label}
+                <i className={`mdi ${item.icon}`} style={{ fontSize: '1.2rem' }}></i>
+                <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <p>Live Monitor</p>
-          <strong>All systems ready</strong>
+          <button onClick={logout} className={styles.logoutButton}>
+            <i className="mdi mdi-logout"></i>
+            <span>Sign Out</span>
+          </button>
         </div>
       </aside>
 
@@ -61,11 +101,22 @@ export function AdminShell({
             <h2 className={styles.pageTitle}>{title}</h2>
             <p className={styles.pageSubtitle}>{subtitle}</p>
           </div>
-          <div className={styles.headerBadge}>Admin Online</div>
+          <div className={styles.headerBadge}>
+            <span className={styles.statusDot}></span>
+            System Active
+          </div>
         </header>
 
         <section className={styles.contentPanel}>{children}</section>
       </main>
+
+      {/* Backdrop for mobile menu */}
+      {isMobileMenuOpen && (
+        <div 
+          className={styles.backdrop} 
+          onClick={() => setIsMobileMenuOpen(false)} 
+        />
+      )}
     </div>
   );
 }

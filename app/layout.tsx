@@ -1,24 +1,35 @@
 import type { Metadata } from "next";
-import { DM_Sans, Sora } from "next/font/google";
 import "./globals.css";
 import { AdminDataProvider } from "./providers/AdminDataProvider";
-
-const sora = Sora({
-  variable: "--font-sora",
-  subsets: ["latin"],
-  weight: ["400", "600", "700"],
-});
-
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-});
 
 export const metadata: Metadata = {
   title: "SAWA Admin Console",
   description:
-    "Admin dashboard for managing prompts, users, couples, activities and communities.",
+    "Premium administrative portal for SAWA. Manage chat prompts, user communities, reports, and connections with complete security and ease.",
+  metadataBase: new URL("https://sawa-admin.vercel.app"), // Placeholder, Vercel will override
+  openGraph: {
+    title: "SAWA Admin Console",
+    description: "Secure management portal for the SAWA mobile ecosystem.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "SAWA Admin Interface",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SAWA Admin Console",
+    description: "Secure management portal for the SAWA mobile ecosystem.",
+    images: ["/og-image.png"],
+  },
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -27,7 +38,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${sora.variable} ${dmSans.variable}`}>
+    <html lang="en">
+      <head>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" />
+      </head>
       <body>
         <AdminDataProvider>{children}</AdminDataProvider>
       </body>

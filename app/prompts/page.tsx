@@ -2,114 +2,117 @@
 
 import { FormEvent, useState } from "react";
 import { AdminShell } from "../components/AdminShell";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { useAdminData } from "../providers/AdminDataProvider";
-import { formatDate, statusClass } from "../lib/format";
 import styles from "./page.module.css";
 
 export default function PromptsPage() {
-  const { prompts, addPrompt, togglePrompt } = useAdminData();
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("Connection");
-  const [question, setQuestion] = useState("");
-  const [tags, setTags] = useState("");
+  const { prompts, addPrompt, togglePrompt, deletePrompt } = useAdminData();
+  const [text, setText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteContent, setDeleteContent] = useState("");
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (!title.trim() || !question.trim()) {
-      return;
-    }
+    if (!text.trim()) return;
+    addPrompt(text.trim(), "chat_shortcut");
+    setText("");
+  };
 
-    addPrompt({
-      title: title.trim(),
-      category,
-      question: question.trim(),
-      tags: tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-    });
+  const openDeleteModal = (id: string, content: string) => {
+    setDeleteId(id);
+    setDeleteContent(content);
+  };
 
-    setTitle("");
-    setQuestion("");
-    setTags("");
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    await deletePrompt?.(deleteId);
+    setIsDeleting(false);
+    setDeleteId(null);
   };
 
   return (
     <AdminShell
-      title="Prompt Management"
-      subtitle="Create and control prompts visible in the SAWA app."
+      title="Chat Prompts"
+      subtitle="Manage the quick-send messages available to users in chat."
     >
       <div className={styles.layout}>
         <form className="glassCard" onSubmit={onSubmit}>
-          <h3 className="sectionTitle">Add New Prompt</h3>
-          <div className="stack">
+          <h3 className="sectionTitle">New Shortcut</h3>
+          <div className="stack" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <input
               className="control"
-              placeholder="Prompt title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-            <select
-              className="control"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option>Connection</option>
-              <option>Fun</option>
-              <option>Gratitude</option>
-              <option>Conflict</option>
-            </select>
-            <textarea
-              className="control"
-              placeholder="Prompt question"
-              value={question}
-              rows={4}
-              onChange={(e) => setQuestion(e.target.value)}
-            />
-            <input
-              className="control"
-              placeholder="Tags separated by commas"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
+              placeholder="Message text (e.g. 'Coffee sometime?')"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              required
+              style={{ color: 'var(--ink)', background: 'white' }}
             />
             <button className="buttonPrimary" type="submit">
-              Create Prompt
+              Add to App
             </button>
           </div>
         </form>
 
         <section className="glassCard">
-          <h3 className="sectionTitle">Prompt Library ({prompts.length})</h3>
-          <div className="stack">
+          <h3 className="sectionTitle">Active Shortcuts ({prompts.length})</h3>
+          <div className="stack" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             {prompts.map((prompt) => (
               <article key={prompt.id} className={styles.promptRow}>
-                <div>
-                  <h4>{prompt.title}</h4>
-                  <p>{prompt.question}</p>
-                  <small>{prompt.tags.join(" • ") || "No tags"}</small>
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: '1.05rem', color: 'var(--ink)' }}>{prompt.title}</p>
                 </div>
                 <div className={styles.promptActions}>
-                  <span
-                    className={statusClass(
-                      prompt.active ? "active" : "inactive",
-                    )}
-                  >
-                    {prompt.active ? "Active" : "Paused"}
-                  </span>
-                  <time>{formatDate(prompt.createdAt)}</time>
                   <button
                     className="buttonGhost"
                     onClick={() => togglePrompt(prompt.id)}
                     type="button"
+                    style={{ 
+                      borderColor: prompt.active ? 'var(--accent-cool)' : 'var(--stroke)',
+                      color: prompt.active ? 'var(--accent-cool)' : 'var(--ink-muted)',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '8px'
+                    }}
                   >
-                    {prompt.active ? "Pause" : "Activate"}
+                    {prompt.active ? "Active" : "Paused"}
+                  </button>
+                  <button
+                    onClick={() => openDeleteModal(prompt.id, prompt.title)}
+                    style={{ 
+                      background: 'none', 
+                      border: 'none', 
+                      color: 'var(--accent-orange)', 
+                      cursor: 'pointer',
+                      fontSize: '1.4rem',
+                      marginLeft: '0.5rem',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <i className="mdi mdi-delete-outline"></i>
                   </button>
                 </div>
               </article>
             ))}
+            {prompts.length === 0 && (
+              <p style={{ textAlign: 'center', color: 'var(--ink-muted)', padding: '2rem' }}>
+                No shortcuts found. Use the form above to add some.
+              </p>
+            )}
           </div>
         </section>
       </div>
+
+      <ConfirmModal
+        isOpen={!!deleteId}
+        title="Delete Shortcut"
+        message={`Are you sure you want to delete "${deleteContent}"? This will remove it from all users' shortcut lists.`}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        isLoading={isDeleting}
+      />
     </AdminShell>
   );
 }
