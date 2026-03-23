@@ -4,14 +4,27 @@ import { AdminShell } from "../components/AdminShell";
 import { useAdminData } from "../providers/AdminDataProvider";
 import { formatDate, statusClass } from "../lib/format";
 import styles from "./page.module.css";
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  ResponsiveContainer, 
+  PieChart, 
+  Pie, 
+  Cell,
+  Legend
+} from 'recharts';
+import { Users, UserPlus, Hash, LayoutGrid, MapPin } from 'lucide-react';
 
 export default function DashboardPage() {
-  const { stats, chartData, userLogs, communityLogs } = useAdminData();
+  const { stats, chartData, userLogs, communityLogs, cityDistribution } = useAdminData();
 
   return (
     <AdminShell
       title="SAWA Dashboard"
-      subtitle="Real-time overview of users, communities, and safety reports."
+      subtitle="Real-time overview of users, communities, and city-wise trends."
     >
       <div className={styles.statsOverview}>
          <div className="glassCard" style={{ flex: 2 }}>
@@ -38,15 +51,14 @@ export default function DashboardPage() {
          </div>
 
          <div className="glassCard" style={{ flex: 1 }}>
-            <h3 className="sectionTitle">Distribution</h3>
+            <h3 className="sectionTitle">User Mix</h3>
             <div style={{ width: '100%', height: 260 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
                     data={[
-                      { name: 'Users', value: stats.totalUsers },
-                      { name: 'Couples', value: stats.totalCouples },
-                      { name: 'Comms', value: stats.totalCommunities },
+                      { name: 'Single Users', value: stats.totalUsers - (stats.totalCouples * 2) > 0 ? stats.totalUsers - (stats.totalCouples * 2) : 0 },
+                      { name: 'Couple Users', value: stats.totalCouples * 2 },
                     ]}
                     innerRadius={60}
                     outerRadius={80}
@@ -55,7 +67,6 @@ export default function DashboardPage() {
                   >
                     <Cell fill="var(--accent-cool)" />
                     <Cell fill="var(--accent-good)" />
-                    <Cell fill="var(--accent-orange)" />
                   </Pie>
                   <Tooltip />
                 </PieChart>
@@ -71,6 +82,28 @@ export default function DashboardPage() {
                   <span>Total Couples</span>
                </div>
             </div>
+         </div>
+      </div>
+
+      <div className="glassCard" style={{ marginBottom: '2rem' }}>
+         <div className={styles.splitHeader} style={{ marginBottom: '1.5rem' }}>
+            <h3 className="sectionTitle">City Distribution</h3>
+            <MapPin size={18} color="var(--ink-muted)" />
+         </div>
+         <div style={{ width: '100%', height: 300 }}>
+            <ResponsiveContainer>
+               <BarChart data={cityDistribution} layout="vertical">
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="city" type="category" axisLine={false} tickLine={false} width={100} />
+                  <Tooltip 
+                    cursor={{fill: 'transparent'}}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                  <Bar dataKey="users" name="Individual Users" fill="var(--accent-cool)" radius={[0, 4, 4, 0]} barSize={12} />
+                  <Bar dataKey="couples" name="Couples" fill="var(--accent-good)" radius={[0, 4, 4, 0]} barSize={12} />
+               </BarChart>
+            </ResponsiveContainer>
          </div>
       </div>
 
@@ -128,16 +161,3 @@ export default function DashboardPage() {
     </AdminShell>
   );
 }
-
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
-  Cell 
-} from 'recharts';
-import { Users, UserPlus, Hash, LayoutGrid } from 'lucide-react';

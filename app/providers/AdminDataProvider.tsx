@@ -22,6 +22,7 @@ interface AdminContextType {
   prompts: PromptItem[];
   reports: ReportItem[];
   chartData: ChartDataPoint[];
+  cityDistribution: any[];
   userLogs: ActivityLog[];
   communityLogs: ActivityLog[];
   isLoading: boolean;
@@ -33,6 +34,7 @@ interface AdminContextType {
   togglePrompt: (id: string) => Promise<void>;
   deletePrompt: (id: string) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
+  deleteCouple: (id: string) => Promise<void>;
   deleteCommunity: (id: string) => Promise<void>;
   addCommunity: (data: any) => Promise<void>;
   sendNotification: (title: string, message: string, recipientIds?: string[]) => Promise<void>;
@@ -57,6 +59,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [userLogs, setUserLogs] = useState<ActivityLog[]>([]);
   const [communityLogs, setCommunityLogs] = useState<ActivityLog[]>([]);
+  const [cityDistribution, setCityDistribution] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [token, setToken] = useState<string | null>(null);
@@ -83,6 +86,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         setChartData(json.data.chartData || []);
         setUserLogs(json.data.userLogs || []);
         setCommunityLogs(json.data.communityLogs || []);
+        setCityDistribution(json.data.cityDistribution || []);
       }
     } catch (err) {
       console.error("Failed to fetch admin data:", err);
@@ -196,6 +200,21 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const deleteCouple = async (id: string) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/couples/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.ok) fetchAllData(token);
+    } catch (err) {
+      console.error("Delete Couple Error:", err);
+    }
+  };
+
   const deleteCommunity = async (id: string) => {
     if (!token) return;
     try {
@@ -257,6 +276,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         prompts,
         reports,
         chartData,
+        cityDistribution,
         userLogs,
         communityLogs,
         isLoading,
@@ -267,6 +287,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         togglePrompt,
         deletePrompt,
         deleteUser,
+        deleteCouple,
         deleteCommunity,
         addCommunity,
         sendNotification,

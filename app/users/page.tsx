@@ -5,15 +5,16 @@ import { AdminShell } from "../components/AdminShell";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { useAdminData } from "../providers/AdminDataProvider";
 import { formatDate, statusClass } from "../lib/format";
-import { UserItem } from "../lib/types";
+import { UserItem, CoupleItem } from "../lib/types";
 import {
   Plus, X, Search, Filter, Phone, MapPin, Calendar, Quote, Heart, Target,
   ChevronRight, ArrowUpDown, MoreHorizontal, UserCheck, UserMinus,
-  CreditCard, Zap
+  CreditCard, Zap, Users, User, Trash2
 } from "lucide-react";
 
 export default function UsersPage() {
-  const { users, deleteUser } = useAdminData();
+  const { users, couples, deleteUser, deleteCouple } = useAdminData();
+  const [viewMode, setViewMode] = useState<"couples" | "singles">("couples");
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "inactive" | "flagged"
   >("all");
@@ -23,17 +24,20 @@ export default function UsersPage() {
   const [deleteName, setDeleteName] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
 
-  const filteredUsers = useMemo(
-    () =>
-      users.filter((user) => {
-        const matchesStatus =
-          statusFilter === "all" || user.status === statusFilter;
-        const text = `${user.name} ${user.city} ${user.phone}`.toLowerCase();
-        const matchesQuery = text.includes(query.toLowerCase());
-        return matchesStatus && matchesQuery;
-      }),
-    [users, statusFilter, query],
-  );
+  const filteredData = useMemo(() => {
+    if (viewMode === "couples") {
+      return couples.filter((c) => {
+        const text = `${c.pairName} ${c.city}`.toLowerCase();
+        return text.includes(query.toLowerCase());
+      });
+    } else {
+      return users.filter((u) => {
+        const matchesStatus = statusFilter === "all" || u.status === statusFilter;
+        const text = `${u.name} ${u.city} ${u.phone}`.toLowerCase();
+        return matchesStatus && text.includes(query.toLowerCase());
+      });
+    }
+  }, [viewMode, users, couples, statusFilter, query]);
 
   const openDeleteModal = (e: React.MouseEvent, id: string, name: string) => {
     e.stopPropagation();
@@ -44,7 +48,11 @@ export default function UsersPage() {
   const confirmDelete = async () => {
     if (!deleteId) return;
     setIsDeleting(true);
-    await deleteUser(deleteId);
+    if (viewMode === "couples") {
+      await deleteCouple(deleteId);
+    } else {
+      await deleteUser(deleteId);
+    }
     setIsDeleting(false);
     setDeleteId(null);
   };
@@ -55,90 +63,137 @@ export default function UsersPage() {
       subtitle="Inspect user accounts, status and onboarding footprint."
     >
       <div className="glassCard" style={{ marginBottom: "1.5rem" }}>
-        <div
-          style={{
-            display: "flex",
-            gap: "1rem",
-            flexWrap: 'wrap'
-          }}
-        >
-          <input
-            className="control"
-            placeholder="Search by name, city or phone"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            style={{ flex: 2, minWidth: '200px' }}
-          />
-          <select
-            className="control"
-            value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value as typeof statusFilter)
-            }
-            style={{ flex: 1, minWidth: '150px' }}
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="flagged">Flagged</option>
-          </select>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
+          <div className="toggleGroup">
+             <button 
+               className={`toggleBtn ${viewMode === 'couples' ? 'active' : ''}`}
+               onClick={() => setViewMode('couples')}
+             >
+               <Users size={16} /> Couples
+             </button>
+             <button 
+               className={`toggleBtn ${viewMode === 'singles' ? 'active' : ''}`}
+               onClick={() => setViewMode('singles')}
+             >
+               <User size={16} /> Individual Users
+             </button>
+          </div>
+
+          <div style={{ display: "flex", gap: "1rem", flex: 1, justifyContent: "flex-end" }}>
+            <input
+              className="control"
+              placeholder={viewMode === 'couples' ? "Search couples..." : "Search users..."}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              style={{ maxWidth: '300px' }}
+            />
+            {viewMode === 'singles' && (
+              <select
+                className="control"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                style={{ maxWidth: '150px' }}
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            )}
+          </div>
         </div>
       </div>
 
       <section className="glassCard">
-        <h3 className="sectionTitle">Users ({filteredUsers.length})</h3>
+        <h3 className="sectionTitle">
+          {viewMode === 'couples' ? 'Couples' : 'Individual Users'} ({filteredData.length})
+        </h3>
         <table className="dataTable">
           <thead>
-            <tr>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>City</th>
-              <th>Joined</th>
-              <th>Subscriptions</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
-            </tr>
+            {viewMode === 'couples' ? (
+              <tr>
+                <th>Couple Name</th>
+                <th>Partners</th>
+                <th>City</th>
+                <th>Compatibility</th>
+                <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            ) : (
+              <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>City</th>
+                <th>Joined</th>
+                <th>Subscription</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            )}
           </thead>
           <tbody>
-            {filteredUsers.map((user) => (
-              <tr
-                key={user.id}
-                onClick={() => setSelectedUser(user)}
-                style={{ cursor: 'pointer' }}
-              >
-                <td style={{ fontWeight: 600, color: 'var(--accent-cool)' }}>{user.name}</td>
-                <td style={{ color: 'var(--ink-muted)' }}>{user.phone}</td>
-                <td>{user.city}</td>
-                <td>{formatDate(user.joinedAt)}</td>
-                <td>
-                  {user.status === "active" ? (
-                    <span className="chip chipSuccess">Active</span>
-                  ) : (
-                    <span className="chip chipDanger">Inactive</span>
-                  )}
-                </td>
-                <td style={{ textAlign: 'right' }}>
-                  <button
-                    onClick={(e) => openDeleteModal(e, user.id, user.name)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--accent-orange)',
-                      cursor: 'pointer',
-                      padding: '8px'
-                    }}
-                    title="Delete User"
-                  >
-                    <X size={18} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {filteredUsers.length === 0 && (
-              <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--ink-muted)' }}>
-                  No users found matching your criteria.
-                </td>
-              </tr>
+            {viewMode === 'couples' ? (
+              (filteredData as CoupleItem[]).map((couple) => (
+                <tr key={couple.id}>
+                  <td style={{ fontWeight: 600, color: 'var(--accent-orange)' }}>{couple.pairName}</td>
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      {couple.partners?.map((p, i) => (
+                        <div key={p.id} style={{ fontSize: '0.85rem' }}>
+                          <span style={{ fontWeight: 500 }}>{p.name}</span>
+                          <span style={{ color: 'var(--ink-muted)', marginLeft: '4px' }}>({p.phone})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                  <td>{couple.city}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ width: '40px', height: '4px', background: '#eee', borderRadius: '2px' }}>
+                        <div style={{ width: `${couple.compatibilityScore}%`, height: '100%', background: 'var(--accent-good)', borderRadius: '2px' }} />
+                      </div>
+                      <span style={{ fontSize: '0.75rem' }}>{couple.compatibilityScore}%</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`chip ${couple.status === 'engaged' ? 'chipSuccess' : 'chipWarning'}`}>
+                      {couple.status}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button
+                      onClick={(e) => openDeleteModal(e, couple.id, couple.pairName)}
+                      className="actionBtn delete"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              (filteredData as UserItem[]).map((user) => (
+                <tr
+                  key={user.id}
+                  onClick={() => setSelectedUser(user)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <td style={{ fontWeight: 600, color: 'var(--accent-cool)' }}>{user.name}</td>
+                  <td style={{ color: 'var(--ink-muted)' }}>{user.phone}</td>
+                  <td>{user.city}</td>
+                  <td>{formatDate(user.joinedAt)}</td>
+                  <td>
+                    <span className={`chip ${user.status === 'active' ? 'chipSuccess' : 'chipDanger'}`}>
+                      {user.status === 'active' ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button
+                      onClick={(e) => openDeleteModal(e, user.id, user.name)}
+                      className="actionBtn delete"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
@@ -146,8 +201,11 @@ export default function UsersPage() {
 
       <ConfirmModal
         isOpen={!!deleteId}
-        title="Delete User"
-        message={`Are you sure you want to delete "${deleteName}"? This action is permanent and will remove all their data from the system.`}
+        title={viewMode === 'couples' ? "Delete Couple" : "Delete User"}
+        message={viewMode === 'couples' 
+          ? `Deleting the "${deleteName}" couple will PERMANENTLY remove both user accounts and all associated data. Continue?`
+          : `Are you sure you want to delete "${deleteName}"? This action cannot be undone.`
+        }
         onConfirm={confirmDelete}
         onCancel={() => setDeleteId(null)}
         isLoading={isDeleting}
@@ -223,6 +281,47 @@ export default function UsersPage() {
       )}
 
       <style jsx>{`
+        .toggleGroup {
+          background: var(--surface-2);
+          padding: 4px;
+          border-radius: 12px;
+          display: flex;
+          gap: 2px;
+          border: 1px solid var(--border);
+        }
+        .toggleBtn {
+          padding: 8px 16px;
+          border-radius: 8px;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--ink-muted);
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          transition: all 0.2s;
+        }
+        .toggleBtn.active {
+          background: white;
+          color: var(--accent-cool);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .actionBtn {
+          background: none;
+          border: none;
+          padding: 8px;
+          cursor: pointer;
+          border-radius: 8px;
+          transition: background 0.2s;
+        }
+        .actionBtn.delete {
+          color: var(--accent-orange);
+        }
+        .actionBtn:hover {
+          background: var(--surface-2);
+        }
         .profileModal {
           max-width: 700px;
           padding: 0;

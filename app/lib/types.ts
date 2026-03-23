@@ -17,6 +17,7 @@ export interface UserItem {
   city: string;
   status: 'active' | 'inactive' | 'flagged';
   joinedAt: string;
+  coupleId?: string | null;
   profile?: {
     bio: string | null;
     primaryPhoto: string | null;
@@ -34,6 +35,13 @@ export interface CoupleItem {
   compatibilityScore: number;
   streakDays: number;
   status: 'new' | 'engaged' | 'inactive';
+  partners?: Array<{ id: string; name: string; phone: string | null }>;
+}
+
+export interface CityStat {
+  city: string;
+  users: number;
+  couples: number;
 }
 
 export interface ActivityItem {
