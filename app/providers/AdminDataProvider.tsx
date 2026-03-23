@@ -9,6 +9,8 @@ import type {
   PromptItem,
   UserItem,
   ReportItem,
+  ChartDataPoint,
+  ActivityLog,
 } from "../lib/types";
 
 interface AdminContextType {
@@ -19,6 +21,9 @@ interface AdminContextType {
   activities: ActivityItem[];
   prompts: PromptItem[];
   reports: ReportItem[];
+  chartData: ChartDataPoint[];
+  userLogs: ActivityLog[];
+  communityLogs: ActivityLog[];
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (phone: string, pass: string) => Promise<boolean>;
@@ -29,6 +34,7 @@ interface AdminContextType {
   deletePrompt: (id: string) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   deleteCommunity: (id: string) => Promise<void>;
+  addCommunity: (data: any) => Promise<void>;
   sendNotification: (title: string, message: string, recipientIds?: string[]) => Promise<void>;
 }
 
@@ -48,6 +54,9 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [prompts, setPrompts] = useState<PromptItem[]>([]);
   const [reports, setReports] = useState<ReportItem[]>([]);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [userLogs, setUserLogs] = useState<ActivityLog[]>([]);
+  const [communityLogs, setCommunityLogs] = useState<ActivityLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [token, setToken] = useState<string | null>(null);
@@ -71,6 +80,9 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         setActivities(json.data.activities);
         setPrompts(json.data.prompts);
         setReports(json.data.reports || []);
+        setChartData(json.data.chartData || []);
+        setUserLogs(json.data.userLogs || []);
+        setCommunityLogs(json.data.communityLogs || []);
       }
     } catch (err) {
       console.error("Failed to fetch admin data:", err);
@@ -199,6 +211,23 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const addCommunity = async (data: any) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/communities`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) fetchAllData(token);
+    } catch (err) {
+      console.error("Add Community Error:", err);
+    }
+  };
+
   const sendNotification = async (title: string, message: string, recipientIds?: string[]) => {
     if (!token) return;
     try {
@@ -227,6 +256,9 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         activities,
         prompts,
         reports,
+        chartData,
+        userLogs,
+        communityLogs,
         isLoading,
         isAuthenticated,
         login,
@@ -236,6 +268,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         deletePrompt,
         deleteUser,
         deleteCommunity,
+        addCommunity,
         sendNotification,
       }}
     >

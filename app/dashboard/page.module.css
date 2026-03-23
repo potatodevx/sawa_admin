@@ -1,33 +1,131 @@
 .layout {
   display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 2rem;
 }
 
-.activityRow {
+.statsOverview {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.chartLegend {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.chartLegend span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chartLegend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.pieStats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.pieStatItem {
+  text-align: center;
+}
+
+.pieStatItem strong {
+  display: block;
+  font-size: 1.2rem;
+  color: var(--ink);
+}
+
+.pieStatItem span {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.splitHeader {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.logStack {
+  display: flex;
+  flex-direction: column;
   gap: 0.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 13px;
-  padding: 0.7rem;
-  background: rgba(255, 255, 255, 0.03);
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
 }
 
-.activityRow p {
-  margin: 0.35rem 0 0;
-  color: #cde0ff;
+.logRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem;
+  border-radius: 12px;
+  background: var(--surface-2);
+  transition: transform 0.2s ease;
 }
 
-.activityRow time {
-  margin-top: 0.4rem;
+.logRow:hover {
+  transform: translateX(4px);
+}
+
+.logIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logTitle {
   display: block;
-  color: #c6daff;
-  opacity: 0.8;
-  font-size: 0.84rem;
+  font-size: 0.9rem;
+  color: var(--ink);
 }
 
-@media (max-width: 980px) {
+.logActor {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  margin: 0.1rem 0 0;
+}
+
+.logTime {
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 1024px) {
+  .statsOverview {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 768px) {
   .layout {
     grid-template-columns: 1fr;
   }

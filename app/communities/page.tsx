@@ -4,20 +4,34 @@ import { useMemo, useState } from "react";
 import { AdminShell } from "../components/AdminShell";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { useAdminData } from "../providers/AdminDataProvider";
+import { Plus, X, Users, Shield, MapPin, Hash, Image as ImageIcon } from "lucide-react";
+import { CommunityItem } from "../lib/types";
 
 export default function CommunitiesPage() {
-  const { communities, deleteCommunity } = useAdminData();
+  const { communities, deleteCommunity, addCommunity } = useAdminData();
   const [minMembers, setMinMembers] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteName, setDeleteName] = useState("");
+  
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedCommunity, setSelectedCommunity] = useState<CommunityItem | null>(null);
+  
+  const [newComm, setNewComm] = useState({
+    name: "",
+    description: "",
+    city: "",
+    tags: "",
+    coverImageUrl: ""
+  });
 
   const visibleCommunities = useMemo(
-    () => communities.filter((community) => community.members >= minMembers),
+    () => communities.filter((community) => community.memberCount >= minMembers),
     [communities, minMembers],
   );
 
-  const openDeleteModal = (id: string, name: string) => {
+  const openDeleteModal = (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
     setDeleteId(id);
     setDeleteName(name);
   };
@@ -30,23 +44,43 @@ export default function CommunitiesPage() {
     setDeleteId(null);
   };
 
+  const handleCreate = async () => {
+     if (!newComm.name || !newComm.city) return;
+     await addCommunity({
+        ...newComm,
+        tags: newComm.tags.split(',').map(t => t.trim()).filter(Boolean)
+     });
+     setShowCreateModal(false);
+     setNewComm({ name: "", description: "", city: "", tags: "", coverImageUrl: "" });
+  };
+
   return (
     <AdminShell
       title="Community Control"
       subtitle="Understand where users gather and which communities are scaling fastest."
     >
-      <div className="glassCard" style={{ marginBottom: "1.5rem" }}>
-        <label style={{ display: "grid", gap: "0.55rem" }}>
-          <span style={{ fontWeight: 600, color: 'var(--ink)' }}>Minimum members: {minMembers}</span>
-          <input
-            type="range"
-            min={0}
-            max={500}
-            value={minMembers}
-            onChange={(event) => setMinMembers(Number(event.target.value))}
-            style={{ accentColor: 'var(--accent-cool)' }}
-          />
-        </label>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem', gap: '1rem', flexWrap: 'wrap' }}>
+        <div className="glassCard" style={{ flex: 1, minWidth: '300px' }}>
+          <label style={{ display: "grid", gap: "0.55rem" }}>
+            <span style={{ fontWeight: 600, color: 'var(--ink)' }}>Minimum members: {minMembers}</span>
+            <input
+              type="range"
+              min={0}
+              max={500}
+              value={minMembers}
+              onChange={(event) => setMinMembers(Number(event.target.value))}
+              style={{ accentColor: 'var(--accent-orange)' }}
+            />
+          </label>
+        </div>
+        
+        <button 
+          className="buttonPrimary" 
+          onClick={() => setShowCreateModal(true)}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', height: 'fit-content' }}
+        >
+          <Plus size={20} /> Create Community
+        </button>
       </div>
 
       <section className="glassCard">
@@ -65,10 +99,14 @@ export default function CommunitiesPage() {
           </thead>
           <tbody>
             {visibleCommunities.map((community) => (
-              <tr key={community.id}>
-                <td style={{ fontWeight: 600 }}>{community.name}</td>
+              <tr 
+                key={community.id} 
+                onClick={() => setSelectedCommunity(community)}
+                style={{ cursor: 'pointer' }}
+              >
+                <td style={{ fontWeight: 600, color: 'var(--accent-orange)' }}>{community.name}</td>
                 <td style={{ color: 'var(--ink-muted)' }}>{community.category}</td>
-                <td>{community.members}</td>
+                <td>{community.memberCount}</td>
                 <td>
                   <span className="chip chipActive">
                     +{community.growthRate}%
@@ -76,17 +114,17 @@ export default function CommunitiesPage() {
                 </td>
                 <td style={{ textAlign: 'right' }}>
                   <button 
-                    onClick={() => openDeleteModal(community.id, community.name)}
+                    onClick={(e) => openDeleteModal(e, community.id, community.name)}
                     style={{ 
                       background: 'none', 
                       border: 'none', 
-                      color: 'var(--accent-orange)', 
+                      color: 'var(--ink-muted)', 
                       cursor: 'pointer',
-                      fontSize: '1.4rem'
+                      padding: '8px'
                     }}
                     title="Delete Community"
                   >
-                    <i className="mdi mdi-delete-outline"></i>
+                    <X size={18} />
                   </button>
                 </td>
               </tr>
@@ -102,6 +140,138 @@ export default function CommunitiesPage() {
         </table>
       </section>
 
+      {/* Community Detail Modal */}
+      {selectedCommunity && (
+        <div className="modalOverlay" onClick={() => setSelectedCommunity(null)}>
+           <div className="modalContent detailModal" onClick={e => e.stopPropagation()}>
+              <button className="modalClose" onClick={() => setSelectedCommunity(null)}>
+                <X size={24} />
+              </button>
+              
+              <div className="detailHero">
+                 {selectedCommunity.coverImageUrl ? (
+                   <img src={selectedCommunity.coverImageUrl} className="heroBg" />
+                 ) : (
+                   <div className="heroBgPlaceholder" />
+                 )}
+                 <div className="heroContent">
+                    <h2>{selectedCommunity.name}</h2>
+                    <div className="heroBadgeRow">
+                       <span className="heroBadge"><MapPin size={12} /> {selectedCommunity.city}</span>
+                       <span className="heroBadge"><Users size={12} /> {selectedCommunity.memberCount} Members</span>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="detailBody">
+                 {selectedCommunity.description && (
+                   <div className="detailSection">
+                      <p className="detailDesc">{selectedCommunity.description}</p>
+                   </div>
+                 )}
+
+                 <div className="tagRow" style={{ marginBottom: '2rem' }}>
+                    {selectedCommunity.tags.map(tag => (
+                      <span key={tag} className="tag"><Hash size={12} /> {tag}</span>
+                    ))}
+                 </div>
+
+                 <div className="splitLists">
+                    <div className="listSection">
+                       <h4 className="listTitle"><Shield size={16} color="var(--accent-orange)" /> Hosts</h4>
+                       <div className="avatarList">
+                          {selectedCommunity.hosts.length > 0 ? selectedCommunity.hosts.map(h => (
+                            <div key={h.id} className="avatarItem" title={h.name}>
+                               {h.photo ? <img src={h.photo} /> : <div className="p">{h.name[0]}</div>}
+                               <span>{h.name}</span>
+                            </div>
+                          )) : <p className="emptyState">No hosts assigned</p>}
+                       </div>
+                    </div>
+
+                    <div className="listSection">
+                       <h4 className="listTitle"><Users size={16} color="var(--accent-cool)" /> Members</h4>
+                       <div className="avatarList">
+                          {selectedCommunity.members.length > 0 ? selectedCommunity.members.map(m => (
+                            <div key={m.id} className="avatarItem" title={m.name}>
+                               {m.photo ? <img src={m.photo} /> : <div className="p">{m.name[0]}</div>}
+                               <span>{m.name}</span>
+                            </div>
+                          )) : <p className="emptyState">No members yet</p>}
+                       </div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* Create Community Modal */}
+      {showCreateModal && (
+        <div className="modalOverlay" onClick={() => setShowCreateModal(false)}>
+           <div className="modalContent createModal" onClick={e => e.stopPropagation()}>
+              <h3 className="sectionTitle">New Community</h3>
+              <div className="formGrid">
+                 <div className="formGroup">
+                    <label>Community Name*</label>
+                    <input 
+                      className="control" 
+                      placeholder="e.g. Weekend Hikers"
+                      value={newComm.name}
+                      onChange={e => setNewComm({...newComm, name: e.target.value})}
+                    />
+                 </div>
+                 <div className="formGroup">
+                    <label>City*</label>
+                    <input 
+                      className="control" 
+                      placeholder="e.g. Mumbai"
+                      value={newComm.city}
+                      onChange={e => setNewComm({...newComm, city: e.target.value})}
+                    />
+                 </div>
+                 <div className="formGroup full">
+                    <label>Description</label>
+                    <textarea 
+                      className="control" 
+                      rows={3}
+                      placeholder="Tell us what this community is about..."
+                      value={newComm.description}
+                      onChange={e => setNewComm({...newComm, description: e.target.value})}
+                    />
+                 </div>
+                 <div className="formGroup">
+                    <label>Photo URL</label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input 
+                        className="control" 
+                        placeholder="https://images..."
+                        value={newComm.coverImageUrl}
+                        onChange={e => setNewComm({...newComm, coverImageUrl: e.target.value})}
+                        style={{ flex: 1 }}
+                      />
+                      <button className="buttonGhost" style={{ padding: '0 10px' }}><ImageIcon size={18} /></button>
+                    </div>
+                 </div>
+                 <div className="formGroup">
+                    <label>Tags (comma separated)</label>
+                    <input 
+                      className="control" 
+                      placeholder="hiking, fitness, outdoors"
+                      value={newComm.tags}
+                      onChange={e => setNewComm({...newComm, tags: e.target.value})}
+                    />
+                 </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', justifyContent: 'flex-end' }}>
+                 <button className="buttonGhost" onClick={() => setShowCreateModal(false)}>Cancel</button>
+                 <button className="buttonPrimary" onClick={handleCreate}>Create Community</button>
+              </div>
+           </div>
+        </div>
+      )}
+
       <ConfirmModal
         isOpen={!!deleteId}
         title="Delete Community"
@@ -110,6 +280,181 @@ export default function CommunitiesPage() {
         onCancel={() => setDeleteId(null)}
         isLoading={isDeleting}
       />
+
+      <style jsx>{`
+        .detailModal {
+          padding: 0;
+          overflow: hidden;
+          max-width: 800px;
+        }
+        .detailHero {
+          height: 240px;
+          position: relative;
+          display: flex;
+          align-items: flex-end;
+          padding: 2rem;
+        }
+        .heroBg {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          filter: brightness(0.6);
+          z-index: 1;
+        }
+        .heroBgPlaceholder {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(to bottom, var(--accent-orange), var(--accent-good));
+          z-index: 1;
+        }
+        .heroContent {
+          position: relative;
+          z-index: 2;
+          color: white;
+        }
+        .heroContent h2 {
+          margin: 0 0 0.5rem;
+          font-size: 2.2rem;
+          text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .heroBadgeRow {
+          display: flex;
+          gap: 0.8rem;
+        }
+        .heroBadge {
+          background: rgba(255,255,255,0.2);
+          backdrop-filter: blur(8px);
+          padding: 0.3rem 0.8rem;
+          border-radius: 99px;
+          font-size: 0.8rem;
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+        }
+        .detailBody {
+          padding: 2rem;
+          background: var(--surface);
+        }
+        .detailDesc {
+          font-size: 1.1rem;
+          line-height: 1.6;
+          color: var(--ink);
+          margin-bottom: 1.5rem;
+        }
+        .tagRow {
+          display: flex;
+          gap: 0.6rem;
+          flex-wrap: wrap;
+        }
+        .tag {
+          background: var(--surface-2);
+          color: var(--ink-muted);
+          padding: 0.4rem 0.8rem;
+          border-radius: 8px;
+          font-size: 0.85rem;
+          display: flex;
+          align-items: center;
+          gap: 0.3rem;
+          border: 1px solid var(--border);
+        }
+        .splitLists {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 2rem;
+        }
+        .listTitle {
+          margin: 0 0 1rem;
+          font-size: 0.9rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: var(--ink-muted);
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .avatarList {
+          display: flex;
+          flex-direction: column;
+          gap: 0.8rem;
+        }
+        .avatarItem {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 0.5rem;
+          border-radius: 12px;
+          transition: background 0.2s;
+        }
+        .avatarItem:hover {
+          background: var(--surface-2);
+        }
+        .avatarItem img {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          object-fit: cover;
+        }
+        .avatarItem .p {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          background: var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+        }
+        .avatarItem span {
+          font-size: 0.95rem;
+          color: var(--ink);
+        }
+        .emptyState {
+          font-size: 0.85rem;
+          color: var(--ink-muted);
+          font-style: italic;
+        }
+        .createModal {
+          max-width: 600px;
+        }
+        .formGrid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.2rem;
+          margin-top: 1.5rem;
+        }
+        .formGroup.full {
+          grid-column: span 2;
+        }
+        .formGroup label {
+          display: block;
+          font-size: 0.85rem;
+          color: var(--ink-muted);
+          margin-bottom: 0.5rem;
+        }
+        @media (max-width: 600px) {
+          .splitLists {
+            grid-template-columns: 1fr;
+          }
+          .formGrid {
+            grid-template-columns: 1fr;
+          }
+          .formGroup.full {
+            grid-column: span 1;
+          }
+          .detailHero {
+            height: 180px;
+          }
+          .heroContent h2 {
+            font-size: 1.8rem;
+          }
+        }
+      `}</style>
     </AdminShell>
   );
 }

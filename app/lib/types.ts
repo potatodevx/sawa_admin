@@ -17,6 +17,14 @@ export interface UserItem {
   city: string;
   status: 'active' | 'inactive' | 'flagged';
   joinedAt: string;
+  profile?: {
+    bio: string | null;
+    primaryPhoto: string | null;
+    answers: Array<{
+      question: string;
+      options: string[];
+    }>;
+  } | null;
 }
 
 export interface CoupleItem {
@@ -39,9 +47,15 @@ export interface ActivityItem {
 export interface CommunityItem {
   id: string;
   name: string;
+  description?: string;
+  city: string;
+  coverImageUrl?: string;
+  tags: string[];
   category: string;
-  members: number;
+  memberCount: number;
   growthRate: number;
+  members: Array<{ id: string; name: string; photo: string | null }>;
+  hosts: Array<{ id: string; name: string; photo: string | null }>;
 }
 
 export interface DashboardStats {
@@ -60,4 +74,19 @@ export interface ReportItem {
   reason: string;
   status: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
   createdAt: string;
+}
+
+export interface ChartDataPoint {
+  name: string;
+  users: number;
+  couples: number;
+  communities: number;
+}
+
+export interface ActivityLog {
+  id: string;
+  title: string;
+  actor: string;
+  happenedAt: string;
+  type: string;
 }

@@ -12,6 +12,7 @@ const navItems = [
   { href: "/users", label: "Users", icon: "mdi-account-group" },
   { href: "/communities", label: "Communities", icon: "mdi-google-circles-communities" },
   { href: "/prompts", label: "Chat Prompts", icon: "mdi-chat-question" },
+  { href: "/onboarding", label: "Onboarding", icon: "mdi-clipboard-list-outline" },
   { href: "/notifications", label: "Send Notifications", icon: "mdi-bell-ring" },
   { href: "/reports", label: "Reports", icon: "mdi-alert-octagon" },
 ];
