@@ -6,7 +6,11 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { useAdminData } from "../providers/AdminDataProvider";
 import { formatDate, statusClass } from "../lib/format";
 import { UserItem } from "../lib/types";
-import { X, Phone, MapPin, Calendar, Quote, Heart, Target } from "lucide-react";
+import {
+  Plus, X, Search, Filter, Phone, MapPin, Calendar, Quote, Heart, Target,
+  ChevronRight, ArrowUpDown, MoreHorizontal, UserCheck, UserMinus,
+  CreditCard, Zap
+} from "lucide-react";
 
 export default function UsersPage() {
   const { users, deleteUser } = useAdminData();
@@ -90,14 +94,14 @@ export default function UsersPage() {
               <th>Phone</th>
               <th>City</th>
               <th>Joined</th>
-              <th>Status</th>
+              <th>Subscriptions</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredUsers.map((user) => (
-              <tr 
-                key={user.id} 
+              <tr
+                key={user.id}
                 onClick={() => setSelectedUser(user)}
                 style={{ cursor: 'pointer' }}
               >
@@ -106,17 +110,19 @@ export default function UsersPage() {
                 <td>{user.city}</td>
                 <td>{formatDate(user.joinedAt)}</td>
                 <td>
-                  <span className={statusClass(user.status)}>
-                    {user.status}
-                  </span>
+                  {user.status === "active" ? (
+                    <span className="chip chipSuccess">Active</span>
+                  ) : (
+                    <span className="chip chipDanger">Inactive</span>
+                  )}
                 </td>
                 <td style={{ textAlign: 'right' }}>
-                  <button 
+                  <button
                     onClick={(e) => openDeleteModal(e, user.id, user.name)}
-                    style={{ 
-                      background: 'none', 
-                      border: 'none', 
-                      color: 'var(--accent-orange)', 
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--accent-orange)',
                       cursor: 'pointer',
                       padding: '8px'
                     }}
@@ -181,6 +187,20 @@ export default function UsersPage() {
                       <p className="bioText">{selectedUser.profile.bio}</p>
                    </div>
                  )}
+
+                 <div className="profileSection">
+                    <div className="sectionLabel"><CreditCard size={14} /> Subscription</div>
+                    <div className="profileGrid">
+                       <div className="profileCard">
+                          <div className="cardLabel"><Zap size={14} /> Tier</div>
+                          <span className="token" style={{ borderColor: 'var(--accent-good)', color: 'var(--accent-good)' }}>Premium Gold</span>
+                       </div>
+                       <div className="profileCard">
+                          <div className="cardLabel"><Calendar size={14} /> Renewal</div>
+                          <span className="token">April 24, 2026</span>
+                       </div>
+                    </div>
+                 </div>
 
                  <div className="profileGrid">
                     {selectedUser.profile?.answers?.map((ans, idx) => (

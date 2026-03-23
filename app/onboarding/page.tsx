@@ -91,10 +91,6 @@ export default function OnboardingMockPage() {
       title="Onboarding Flow Mock"
       subtitle="Preview and design the onboarding journey without affecting live data."
     >
-      <div className="alert-banner">
-         <Eye size={16} /> <strong>Mock Mode Active:</strong> Changes made here are saved only in your current session for demonstration purposes.
-      </div>
-
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
          <div className="tabRow">
             <button 
