@@ -210,6 +210,9 @@ export default function CommunitiesPage() {
       {showCreateModal && (
         <div className="modalOverlay" onClick={() => setShowCreateModal(false)}>
            <div className="modalContent createModal" onClick={e => e.stopPropagation()}>
+              <button className="modalClose" style={{ color: 'var(--ink)' }} onClick={() => setShowCreateModal(false)}>
+                <X size={24} />
+              </button>
               <h3 className="sectionTitle">New Community</h3>
               <div className="formGrid">
                  <div className="formGroup">
@@ -284,7 +287,6 @@ export default function CommunitiesPage() {
       <style jsx>{`
         .detailModal {
           padding: 0;
-          overflow: hidden;
           max-width: 800px;
         }
         .detailHero {
@@ -339,7 +341,6 @@ export default function CommunitiesPage() {
         }
         .detailBody {
           padding: 2rem;
-          background: var(--surface);
         }
         .detailDesc {
           font-size: 1.1rem;
@@ -421,6 +422,7 @@ export default function CommunitiesPage() {
         }
         .createModal {
           max-width: 600px;
+          padding: 2.5rem;
         }
         .formGrid {
           display: grid;
@@ -452,6 +454,9 @@ export default function CommunitiesPage() {
           }
           .heroContent h2 {
             font-size: 1.8rem;
+          }
+          .createModal {
+            padding: 1.5rem;
           }
         }
       `}</style>

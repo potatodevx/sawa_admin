@@ -206,13 +206,11 @@ export default function UsersPage() {
         .profileModal {
           max-width: 700px;
           padding: 0;
-          overflow: hidden;
-          background: var(--surface);
           border: 1px solid var(--border);
         }
         .profileHeader {
           background: linear-gradient(to bottom right, var(--accent-cool), #6366f1);
-          padding: 2.5rem 2rem;
+          padding: 3rem 2rem 2.5rem;
           color: white;
           display: flex;
           gap: 1.5rem;
@@ -255,8 +253,6 @@ export default function UsersPage() {
         }
         .profileBody {
           padding: 2rem;
-          max-height: 500px;
-          overflow-y: auto;
         }
         .profileSection {
           margin-bottom: 2rem;
@@ -315,7 +311,7 @@ export default function UsersPage() {
           .profileHeader {
             flex-direction: column;
             text-align: center;
-            padding: 2rem 1rem;
+            padding: 3.5rem 1rem 2rem;
           }
         }
       `}</style>
