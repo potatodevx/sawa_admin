@@ -270,6 +270,7 @@ export default function UsersPage() {
           font-size: 0.9rem;
           opacity: 0.9;
           margin-top: 0.3rem;
+          flex-wrap: wrap;
         }
         .profileBody {
           padding: 2rem;
