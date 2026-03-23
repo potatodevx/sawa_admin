@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { AdminShell } from "../components/AdminShell";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { useAdminData } from "../providers/AdminDataProvider";
-import { Plus, X, Users, Shield, MapPin, Hash, Image as ImageIcon } from "lucide-react";
+import { 
+  Plus, X, Users, Shield, MapPin, Hash, 
+  Image as ImageIcon, Trash2, Upload, Search
+} from "lucide-react";
 import { CommunityItem } from "../lib/types";
 
 export default function CommunitiesPage() {
@@ -13,6 +16,7 @@ export default function CommunitiesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteName, setDeleteName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState<CommunityItem | null>(null);
@@ -52,6 +56,30 @@ export default function CommunitiesPage() {
      });
      setShowCreateModal(false);
      setNewComm({ name: "", description: "", city: "", tags: "", coverImageUrl: "" });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image size should be less than 5MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewComm({ ...newComm, coverImageUrl: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removeImage = () => {
+    setNewComm({ ...newComm, coverImageUrl: "" });
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
@@ -243,20 +271,41 @@ export default function CommunitiesPage() {
                       onChange={e => setNewComm({...newComm, description: e.target.value})}
                     />
                  </div>
-                 <div className="formGroup">
-                    <label>Photo URL</label>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <input 
-                        className="control" 
-                        placeholder="https://images..."
-                        value={newComm.coverImageUrl}
-                        onChange={e => setNewComm({...newComm, coverImageUrl: e.target.value})}
-                        style={{ flex: 1 }}
-                      />
-                      <button className="buttonGhost" style={{ padding: '0 10px' }}><ImageIcon size={18} /></button>
+                 <div className="formGroup full">
+                    <label>Community Cover Image</label>
+                    <div className="uploadControl">
+                       {newComm.coverImageUrl ? (
+                         <div className="imagePreview">
+                            <img src={newComm.coverImageUrl} alt="Preview" />
+                            <button className="removeImgBtn" onClick={removeImage}>
+                               <Trash2 size={14} />
+                            </button>
+                         </div>
+                       ) : (
+                         <button className="uploadPlaceholder" onClick={triggerUpload}>
+                            <Upload size={24} />
+                            <span>Upload Cover Photo</span>
+                         </button>
+                       )}
+                       <input 
+                         type="file" 
+                         ref={fileInputRef} 
+                         onChange={handleFileChange} 
+                         hidden 
+                         accept="image/*" 
+                       />
+                       <div className="urlInput">
+                          <label>Or paste image URL</label>
+                          <input 
+                            className="control" 
+                            placeholder="https://images..."
+                            value={newComm.coverImageUrl}
+                            onChange={e => setNewComm({...newComm, coverImageUrl: e.target.value})}
+                          />
+                       </div>
                     </div>
                  </div>
-                 <div className="formGroup">
+                 <div className="formGroup full">
                     <label>Tags (comma separated)</label>
                     <input 
                       className="control" 
@@ -438,6 +487,63 @@ export default function CommunitiesPage() {
           font-size: 0.85rem;
           color: var(--ink-muted);
           margin-bottom: 0.5rem;
+        }
+        .uploadControl {
+          display: grid;
+          gap: 1rem;
+        }
+        .uploadPlaceholder {
+          width: 100%;
+          height: 120px;
+          border: 2px dashed var(--border);
+          border-radius: 16px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          color: var(--ink-muted);
+          background: var(--bg-app);
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .uploadPlaceholder:hover {
+          border-color: var(--accent-orange);
+          color: var(--accent-orange);
+          background: rgba(223, 85, 41, 0.05);
+        }
+        .imagePreview {
+          width: 100%;
+          height: 160px;
+          border-radius: 16px;
+          overflow: hidden;
+          position: relative;
+        }
+        .imagePreview img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .removeImgBtn {
+          position: absolute;
+          top: 0.5rem;
+          right: 0.5rem;
+          background: rgba(0,0,0,0.5);
+          color: white;
+          border: none;
+          padding: 0.5rem;
+          border-radius: 50%;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          backdrop-filter: blur(4px);
+        }
+        .removeImgBtn:hover {
+          background: var(--accent-orange);
+        }
+        .urlInput {
+          margin-top: 0.5rem;
         }
         @media (max-width: 600px) {
           .splitLists {
