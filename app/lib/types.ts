@@ -36,6 +36,12 @@ export interface CoupleItem {
   streakDays: number;
   status: 'new' | 'engaged' | 'inactive';
   partners?: Array<{ id: string; name: string; phone: string | null }>;
+  bio?: string | null;
+  primaryPhoto?: string | null;
+  answers?: Array<{
+    question: string;
+    options: string[];
+  }>;
 }
 
 export interface CityStat {

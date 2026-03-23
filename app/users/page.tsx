@@ -23,6 +23,7 @@ export default function UsersPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteName, setDeleteName] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
+  const [selectedCouple, setSelectedCouple] = useState<CoupleItem | null>(null);
 
   const filteredData = useMemo(() => {
     if (viewMode === "couples") {
@@ -67,13 +68,13 @@ export default function UsersPage() {
           <div className="toggleGroup">
              <button 
                className={`toggleBtn ${viewMode === 'couples' ? 'active' : ''}`}
-               onClick={() => setViewMode('couples')}
+               onClick={() => { setViewMode('couples'); setQuery(''); }}
              >
                <Users size={16} /> Couples
              </button>
              <button 
                className={`toggleBtn ${viewMode === 'singles' ? 'active' : ''}`}
-               onClick={() => setViewMode('singles')}
+               onClick={() => { setViewMode('singles'); setQuery(''); }}
              >
                <User size={16} /> Individual Users
              </button>
@@ -132,7 +133,11 @@ export default function UsersPage() {
           <tbody>
             {viewMode === 'couples' ? (
               (filteredData as CoupleItem[]).map((couple) => (
-                <tr key={couple.id}>
+                <tr 
+                  key={couple.id}
+                  onClick={() => setSelectedCouple(couple)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <td style={{ fontWeight: 600, color: 'var(--accent-orange)' }}>{couple.pairName}</td>
                   <td>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -280,7 +285,95 @@ export default function UsersPage() {
         </div>
       )}
 
+      {selectedCouple && (
+        <div className="modalOverlay" onClick={() => setSelectedCouple(null)}>
+           <div className="modalContent profileModal" onClick={e => e.stopPropagation()}>
+              <button className="modalClose" onClick={() => setSelectedCouple(null)}>
+                <X size={24} />
+              </button>
+
+              <div className="profileHeader" style={{ background: 'linear-gradient(to bottom right, var(--accent-orange), #f97316)' }}>
+                 <div className="profileAvatar">
+                    {selectedCouple.primaryPhoto ? (
+                      <img src={selectedCouple.primaryPhoto} alt={selectedCouple.pairName} />
+                    ) : (
+                      <div className="avatarPlaceholder"><Users size={40} /></div>
+                    )}
+                 </div>
+                 <div className="profileMeta">
+                    <h2>{selectedCouple.pairName}</h2>
+                    <div className="metaRow">
+                      <MapPin size={14} /> <span>{selectedCouple.city}</span>
+                      <Users size={14} style={{ marginLeft: '12px' }} /> <span>{selectedCouple.partners?.length || 0} Partners</span>
+                    </div>
+                    <div className="partnersBadgeRow">
+                      {selectedCouple.partners?.map(p => (
+                        <span key={p.id} className="partnerBadge">
+                          <User size={10} /> {p.name}
+                        </span>
+                      ))}
+                    </div>
+                 </div>
+              </div>
+
+              <div className="profileBody">
+                 {selectedCouple.bio && (
+                   <div className="profileSection">
+                      <div className="sectionLabel"><Quote size={14} /> Our Story</div>
+                      <p className="bioText">{selectedCouple.bio}</p>
+                   </div>
+                 )}
+
+                 <div className="profileSection">
+                    <div className="sectionLabel"><Target size={14} /> Compatibility</div>
+                    <div className="profileCard" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                       <div>
+                          <p style={{ margin: 0, fontWeight: 600 }}>Active Relationship</p>
+                          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--ink-muted)' }}>Status: {selectedCouple.status}</p>
+                       </div>
+                       <div style={{ textAlign: 'right' }}>
+                          <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-good)' }}>{selectedCouple.compatibilityScore}%</p>
+                          <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--ink-muted)' }}>Match Score</p>
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="profileGrid">
+                    {selectedCouple.answers?.map((ans, idx) => (
+                      <div className="profileCard" key={idx}>
+                         <div className="cardLabel">
+                            <Zap size={14} /> {ans.question}
+                         </div>
+                         <div className="tokenRow">
+                            {ans.options.map((opt, i) => (
+                              <span key={i} className="token" style={{ borderColor: 'var(--accent-orange)', color: 'var(--accent-orange)' }}>{opt}</span>
+                            ))}
+                         </div>
+                      </div>
+                    ))}
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
       <style jsx>{`
+        .partnersBadgeRow {
+          display: flex;
+          gap: 0.5rem;
+          margin-top: 0.8rem;
+          flex-wrap: wrap;
+        }
+        .partnerBadge {
+          background: rgba(255,255,255,0.2);
+          padding: 2px 8px;
+          border-radius: 6px;
+          font-size: 0.75rem;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          border: 1px solid rgba(255,255,255,0.3);
+        }
         .toggleGroup {
           background: var(--surface-2);
           padding: 4px;
