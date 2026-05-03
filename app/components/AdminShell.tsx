@@ -35,10 +35,7 @@ export function AdminShell({ children, title, subtitle }: SidebarProps) {
     }
   }, [isAuthenticated, isLoading, pathname, router]);
 
-  // Close mobile menu on navigation
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   if (isLoading) return null;
   if (!isAuthenticated && pathname !== "/login") return null;
@@ -80,6 +77,7 @@ export function AdminShell({ children, title, subtitle }: SidebarProps) {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={closeMobileMenu}
                 className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`}
               >
                 <i className={`mdi ${item.icon}`} style={{ fontSize: '1.2rem' }}></i>

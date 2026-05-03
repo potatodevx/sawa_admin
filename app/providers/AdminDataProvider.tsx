@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import type {
   ActivityItem,
+  CityStat,
   CommunityItem,
   CoupleItem,
   DashboardStats,
@@ -13,6 +14,14 @@ import type {
   ActivityLog,
 } from "../lib/types";
 
+export interface AddCommunityInput {
+  name: string;
+  description?: string;
+  city: string;
+  tags?: string[];
+  coverImageUrl?: string;
+}
+
 interface AdminContextType {
   stats: DashboardStats;
   users: UserItem[];
@@ -22,12 +31,12 @@ interface AdminContextType {
   prompts: PromptItem[];
   reports: ReportItem[];
   chartData: ChartDataPoint[];
-  cityDistribution: any[];
+  cityDistribution: CityStat[];
   userLogs: ActivityLog[];
   communityLogs: ActivityLog[];
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (phone: string, pass: string) => Promise<boolean>;
+  login: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
   // Actions
   addPrompt: (title: string, category: string) => Promise<void>;
@@ -36,8 +45,9 @@ interface AdminContextType {
   deleteUser: (id: string) => Promise<void>;
   deleteCouple: (id: string) => Promise<void>;
   deleteCommunity: (id: string) => Promise<void>;
-  addCommunity: (data: any) => Promise<void>;
+  addCommunity: (data: AddCommunityInput) => Promise<void>;
   sendNotification: (title: string, message: string, recipientIds?: string[]) => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -59,7 +69,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [userLogs, setUserLogs] = useState<ActivityLog[]>([]);
   const [communityLogs, setCommunityLogs] = useState<ActivityLog[]>([]);
-  const [cityDistribution, setCityDistribution] = useState<any[]>([]);
+  const [cityDistribution, setCityDistribution] = useState<CityStat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [token, setToken] = useState<string | null>(null);
@@ -74,6 +84,15 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
           Authorization: `Bearer ${authToken}`,
         },
       });
+
+      // 401 → token expired/invalid; force re-login
+      if (res.status === 401) {
+        localStorage.removeItem("admin_token");
+        setToken(null);
+        setIsAuthenticated(false);
+        return;
+      }
+
       const json = await res.json();
       if (json.success) {
         setStats(json.data.stats);
@@ -93,7 +112,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [API_URL]);
 
   useEffect(() => {
     const savedToken = localStorage.getItem("admin_token");
@@ -230,7 +249,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addCommunity = async (data: any) => {
+  const addCommunity = async (data: AddCommunityInput) => {
     if (!token) return;
     try {
       const res = await fetch(`${API_URL}/communities`, {
@@ -246,6 +265,11 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
       console.error("Add Community Error:", err);
     }
   };
+
+  const refresh = useCallback(async () => {
+    if (!token) return;
+    await fetchAllData(token);
+  }, [token, fetchAllData]);
 
   const sendNotification = async (title: string, message: string, recipientIds?: string[]) => {
     if (!token) return;
@@ -291,6 +315,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         deleteCommunity,
         addCommunity,
         sendNotification,
+        refresh,
       }}
     >
       {children}

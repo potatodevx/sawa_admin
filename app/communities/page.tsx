@@ -6,7 +6,7 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { useAdminData } from "../providers/AdminDataProvider";
 import { 
   Plus, X, Users, Shield, MapPin, Hash, 
-  Image as ImageIcon, Trash2, Upload, Search
+  Trash2, Upload
 } from "lucide-react";
 import { CommunityItem } from "../lib/types";
 
@@ -178,7 +178,8 @@ export default function CommunitiesPage() {
               
               <div className="detailHero">
                  {selectedCommunity.coverImageUrl ? (
-                   <img src={selectedCommunity.coverImageUrl} className="heroBg" />
+                   // eslint-disable-next-line @next/next/no-img-element
+                   <img src={selectedCommunity.coverImageUrl} alt={selectedCommunity.name} className="heroBg" />
                  ) : (
                    <div className="heroBgPlaceholder" />
                  )}
@@ -210,7 +211,10 @@ export default function CommunitiesPage() {
                        <div className="avatarList">
                           {selectedCommunity.hosts.length > 0 ? selectedCommunity.hosts.map(h => (
                             <div key={h.id} className="avatarItem" title={h.name}>
-                               {h.photo ? <img src={h.photo} /> : <div className="p">{h.name[0]}</div>}
+                               {h.photo
+                                 // eslint-disable-next-line @next/next/no-img-element
+                                 ? <img src={h.photo} alt={h.name} />
+                                 : <div className="p">{h.name[0]}</div>}
                                <span>{h.name}</span>
                             </div>
                           )) : <p className="emptyState">No hosts assigned</p>}
@@ -222,7 +226,10 @@ export default function CommunitiesPage() {
                        <div className="avatarList">
                           {selectedCommunity.members.length > 0 ? selectedCommunity.members.map(m => (
                             <div key={m.id} className="avatarItem" title={m.name}>
-                               {m.photo ? <img src={m.photo} /> : <div className="p">{m.name[0]}</div>}
+                               {m.photo
+                                 // eslint-disable-next-line @next/next/no-img-element
+                                 ? <img src={m.photo} alt={m.name} />
+                                 : <div className="p">{m.name[0]}</div>}
                                <span>{m.name}</span>
                             </div>
                           )) : <p className="emptyState">No members yet</p>}
@@ -276,6 +283,7 @@ export default function CommunitiesPage() {
                     <div className="uploadControl">
                        {newComm.coverImageUrl ? (
                          <div className="imagePreview">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={newComm.coverImageUrl} alt="Preview" />
                             <button className="removeImgBtn" onClick={removeImage}>
                                <Trash2 size={14} />

@@ -2,7 +2,7 @@
 
 import { AdminShell } from "../components/AdminShell";
 import { useAdminData } from "../providers/AdminDataProvider";
-import { formatDate, statusClass } from "../lib/format";
+import { formatDate } from "../lib/format";
 import styles from "./page.module.css";
 import { 
   BarChart, 

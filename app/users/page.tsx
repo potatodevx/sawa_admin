@@ -4,20 +4,19 @@ import { useMemo, useState } from "react";
 import { AdminShell } from "../components/AdminShell";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { useAdminData } from "../providers/AdminDataProvider";
-import { formatDate, statusClass } from "../lib/format";
+import { formatDate } from "../lib/format";
 import { UserItem, CoupleItem } from "../lib/types";
 import {
-  Plus, X, Search, Filter, Phone, MapPin, Calendar, Quote, Heart, Target,
-  ChevronRight, ArrowUpDown, MoreHorizontal, UserCheck, UserMinus,
+  X, Phone, MapPin, Calendar, Quote, Heart, Target,
   CreditCard, Zap, Users, User, Trash2
 } from "lucide-react";
+
+type StatusFilter = "all" | "active" | "inactive" | "flagged";
 
 export default function UsersPage() {
   const { users, couples, deleteUser, deleteCouple } = useAdminData();
   const [viewMode, setViewMode] = useState<"couples" | "singles">("couples");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "active" | "inactive" | "flagged"
-  >("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [query, setQuery] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -92,7 +91,7 @@ export default function UsersPage() {
               <select
                 className="control"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
+                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
                 style={{ maxWidth: '150px' }}
               >
                 <option value="all">All Status</option>
@@ -141,7 +140,7 @@ export default function UsersPage() {
                   <td style={{ fontWeight: 600, color: 'var(--accent-orange)' }}>{couple.pairName}</td>
                   <td>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      {couple.partners?.map((p, i) => (
+                      {couple.partners?.map((p) => (
                         <div key={p.id} style={{ fontSize: '0.85rem' }}>
                           <span style={{ fontWeight: 500 }}>{p.name}</span>
                           <span style={{ color: 'var(--ink-muted)', marginLeft: '4px' }}>({p.phone})</span>
@@ -226,6 +225,7 @@ export default function UsersPage() {
               <div className="profileHeader">
                  <div className="profileAvatar">
                     {selectedUser.profile?.primaryPhoto ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={selectedUser.profile.primaryPhoto} alt={selectedUser.name} />
                     ) : (
                       <div className="avatarPlaceholder">{selectedUser.name[0]}</div>
@@ -295,6 +295,7 @@ export default function UsersPage() {
               <div className="profileHeader" style={{ background: 'linear-gradient(to bottom right, var(--accent-orange), #f97316)' }}>
                  <div className="profileAvatar">
                     {selectedCouple.primaryPhoto ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={selectedCouple.primaryPhoto} alt={selectedCouple.pairName} />
                     ) : (
                       <div className="avatarPlaceholder"><Users size={40} /></div>

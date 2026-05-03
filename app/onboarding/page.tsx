@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AdminShell } from "../components/AdminShell";
-import { Plus, Trash2, Edit2, Check, X, MoveUp, MoveDown, Eye } from "lucide-react";
+import { Plus, Trash2, Edit2, Check, X } from "lucide-react";
 
 interface QuestionMock {
   id: string;
@@ -144,7 +144,7 @@ export default function OnboardingMockPage() {
                        <label>Input Type:</label>
                        <select 
                          value={q.type} 
-                         onChange={e => handleUpdate(q.id, { type: e.target.value as any })}
+                         onChange={e => handleUpdate(q.id, { type: e.target.value as QuestionMock["type"] })}
                        >
                           <option value="single">Single Choice</option>
                           <option value="multiple">Multiple Choice</option>
