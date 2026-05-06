@@ -6,12 +6,12 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { useAdminData } from "../providers/AdminDataProvider";
 import { 
   Plus, X, Users, Shield, MapPin, Hash, 
-  Trash2, Upload
+  Trash2, Upload, AlertCircle, Check, XCircle
 } from "lucide-react";
 import { CommunityItem } from "../lib/types";
 
 export default function CommunitiesPage() {
-  const { communities, deleteCommunity, addCommunity } = useAdminData();
+  const { communities, couples, deleteCommunity, addCommunity, processJoinRequest } = useAdminData();
   const [minMembers, setMinMembers] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -21,13 +21,27 @@ export default function CommunitiesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState<CommunityItem | null>(null);
   
-  const [newComm, setNewComm] = useState({
+  const [newComm, setNewComm] = useState<{
+    name: string;
+    description: string;
+    city: string;
+    tags: string;
+    coverImageUrl: string;
+    hostCoupleId: string;
+  }>({
     name: "",
     description: "",
     city: "",
     tags: "",
-    coverImageUrl: ""
+    coverImageUrl: "",
+    hostCoupleId: "",
   });
+
+  // Aggregate counter for the "X requests pending" cue in the hero/list.
+  const totalPendingRequests = useMemo(
+    () => communities.reduce((acc, c) => acc + (c.pendingRequests?.length || 0), 0),
+    [communities],
+  );
 
   const visibleCommunities = useMemo(
     () => communities.filter((community) => community.memberCount >= minMembers),
@@ -51,11 +65,31 @@ export default function CommunitiesPage() {
   const handleCreate = async () => {
      if (!newComm.name || !newComm.city) return;
      await addCommunity({
-        ...newComm,
-        tags: newComm.tags.split(',').map(t => t.trim()).filter(Boolean)
+        name: newComm.name,
+        description: newComm.description,
+        city: newComm.city,
+        coverImageUrl: newComm.coverImageUrl,
+        tags: newComm.tags.split(',').map(t => t.trim()).filter(Boolean),
+        hostCoupleId: newComm.hostCoupleId || null,
      });
      setShowCreateModal(false);
-     setNewComm({ name: "", description: "", city: "", tags: "", coverImageUrl: "" });
+     setNewComm({ name: "", description: "", city: "", tags: "", coverImageUrl: "", hostCoupleId: "" });
+  };
+
+  // Refresh selectedCommunity when underlying data changes (e.g. after a join request approval).
+  const liveSelectedCommunity = useMemo(
+    () => (selectedCommunity ? communities.find(c => c.id === selectedCommunity.id) || selectedCommunity : null),
+    [selectedCommunity, communities],
+  );
+
+  const handleProcessRequest = async (
+    e: React.MouseEvent,
+    communityId: string,
+    requestId: string,
+    decision: 'accept' | 'reject',
+  ) => {
+    e.stopPropagation();
+    await processJoinRequest(communityId, requestId, decision);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,6 +145,25 @@ export default function CommunitiesPage() {
         </button>
       </div>
 
+      {totalPendingRequests > 0 && (
+        <div
+          className="glassCard"
+          style={{
+            marginBottom: '1.5rem',
+            background: 'linear-gradient(135deg, rgba(243, 115, 33, 0.08), rgba(243, 115, 33, 0.02))',
+            borderColor: 'var(--accent-orange)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <AlertCircle size={20} color="var(--accent-orange)" />
+            <strong>{totalPendingRequests}</strong>
+            <span style={{ color: 'var(--ink-muted)' }}>
+              join request{totalPendingRequests === 1 ? '' : 's'} awaiting approval. Open a community to review.
+            </span>
+          </div>
+        </div>
+      )}
+
       <section className="glassCard">
         <h3 className="sectionTitle">
           Communities ({visibleCommunities.length})
@@ -121,45 +174,68 @@ export default function CommunitiesPage() {
               <th>Name</th>
               <th>Category</th>
               <th>Members</th>
+              <th>Pending</th>
               <th>Growth</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {visibleCommunities.map((community) => (
-              <tr 
-                key={community.id} 
-                onClick={() => setSelectedCommunity(community)}
-                style={{ cursor: 'pointer' }}
-              >
-                <td style={{ fontWeight: 600, color: 'var(--accent-orange)' }}>{community.name}</td>
-                <td style={{ color: 'var(--ink-muted)' }}>{community.category}</td>
-                <td>{community.memberCount}</td>
-                <td>
-                  <span className="chip chipActive">
-                    +{community.growthRate}%
-                  </span>
-                </td>
-                <td style={{ textAlign: 'right' }}>
-                  <button 
-                    onClick={(e) => openDeleteModal(e, community.id, community.name)}
-                    style={{ 
-                      background: 'none', 
-                      border: 'none', 
-                      color: 'var(--ink-muted)', 
-                      cursor: 'pointer',
-                      padding: '8px'
-                    }}
-                    title="Delete Community"
-                  >
-                    <X size={18} />
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {visibleCommunities.map((community) => {
+              const pending = community.pendingRequests?.length || 0;
+              return (
+                <tr 
+                  key={community.id} 
+                  onClick={() => setSelectedCommunity(community)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <td style={{ fontWeight: 600, color: 'var(--accent-orange)' }}>
+                    {community.name}
+                    {community.hasNoHost && (
+                      <span
+                        title="No host assigned. Approve join requests directly from the community modal."
+                        style={{ marginLeft: 8, fontSize: '0.7rem', color: 'var(--ink-muted)' }}
+                      >
+                        (no host)
+                      </span>
+                    )}
+                  </td>
+                  <td style={{ color: 'var(--ink-muted)' }}>{community.category}</td>
+                  <td>{community.memberCount}</td>
+                  <td>
+                    {pending > 0 ? (
+                      <span className="chip" style={{ borderColor: 'var(--accent-orange)', color: 'var(--accent-orange)' }}>
+                        {pending} pending
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--ink-muted)', fontSize: '0.8rem' }}>—</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className="chip chipActive">
+                      +{community.growthRate}%
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button 
+                      onClick={(e) => openDeleteModal(e, community.id, community.name)}
+                      style={{ 
+                        background: 'none', 
+                        border: 'none', 
+                        color: 'var(--ink-muted)', 
+                        cursor: 'pointer',
+                        padding: '8px'
+                      }}
+                      title="Delete Community"
+                    >
+                      <X size={18} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
             {visibleCommunities.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: 'var(--ink-muted)' }}>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--ink-muted)' }}>
                   No communities found with at least {minMembers} members.
                 </td>
               </tr>
@@ -169,7 +245,7 @@ export default function CommunitiesPage() {
       </section>
 
       {/* Community Detail Modal */}
-      {selectedCommunity && (
+      {liveSelectedCommunity && (
         <div className="modalOverlay" onClick={() => setSelectedCommunity(null)}>
            <div className="modalContent detailModal" onClick={e => e.stopPropagation()}>
               <button className="modalClose" onClick={() => setSelectedCommunity(null)}>
@@ -177,39 +253,81 @@ export default function CommunitiesPage() {
               </button>
               
               <div className="detailHero">
-                 {selectedCommunity.coverImageUrl ? (
+                 {liveSelectedCommunity.coverImageUrl ? (
                    // eslint-disable-next-line @next/next/no-img-element
-                   <img src={selectedCommunity.coverImageUrl} alt={selectedCommunity.name} className="heroBg" />
+                   <img src={liveSelectedCommunity.coverImageUrl} alt={liveSelectedCommunity.name} className="heroBg" />
                  ) : (
                    <div className="heroBgPlaceholder" />
                  )}
                  <div className="heroContent">
-                    <h2>{selectedCommunity.name}</h2>
+                    <h2>{liveSelectedCommunity.name}</h2>
                     <div className="heroBadgeRow">
-                       <span className="heroBadge"><MapPin size={12} /> {selectedCommunity.city}</span>
-                       <span className="heroBadge"><Users size={12} /> {selectedCommunity.memberCount} Members</span>
+                       <span className="heroBadge"><MapPin size={12} /> {liveSelectedCommunity.city}</span>
+                       <span className="heroBadge"><Users size={12} /> {liveSelectedCommunity.memberCount} Members</span>
                     </div>
                  </div>
               </div>
 
               <div className="detailBody">
-                 {selectedCommunity.description && (
+                 {liveSelectedCommunity.description && (
                    <div className="detailSection">
-                      <p className="detailDesc">{selectedCommunity.description}</p>
+                      <p className="detailDesc">{liveSelectedCommunity.description}</p>
                    </div>
                  )}
 
                  <div className="tagRow" style={{ marginBottom: '2rem' }}>
-                    {selectedCommunity.tags.map(tag => (
+                    {liveSelectedCommunity.tags.map(tag => (
                       <span key={tag} className="tag"><Hash size={12} /> {tag}</span>
                     ))}
                  </div>
+
+                 {/* Pending join requests — admin can approve/reject directly,
+                     even for host-less communities created from the admin panel. */}
+                 {liveSelectedCommunity.pendingRequests && liveSelectedCommunity.pendingRequests.length > 0 && (
+                   <div className="listSection" style={{ marginBottom: '2rem' }}>
+                     <h4 className="listTitle">
+                       <AlertCircle size={16} color="var(--accent-orange)" />
+                       Pending Join Requests ({liveSelectedCommunity.pendingRequests.length})
+                     </h4>
+                     <div className="avatarList">
+                       {liveSelectedCommunity.pendingRequests.map((r) => (
+                         <div key={r.id} className="avatarItem" style={{ justifyContent: 'space-between' }}>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                             {r.photo
+                               // eslint-disable-next-line @next/next/no-img-element
+                               ? <img src={r.photo} alt={r.name} />
+                               : <div className="p">{r.name[0]}</div>}
+                             <span>{r.name}</span>
+                           </div>
+                           <div style={{ display: 'flex', gap: 6 }}>
+                             <button
+                               className="actionBtn"
+                               style={{ color: 'var(--accent-good)' }}
+                               title="Accept"
+                               onClick={(e) => handleProcessRequest(e, liveSelectedCommunity.id, r.id, 'accept')}
+                             >
+                               <Check size={18} />
+                             </button>
+                             <button
+                               className="actionBtn"
+                               style={{ color: 'var(--accent-orange)' }}
+                               title="Reject"
+                               onClick={(e) => handleProcessRequest(e, liveSelectedCommunity.id, r.id, 'reject')}
+                             >
+                               <XCircle size={18} />
+                             </button>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 )}
 
                  <div className="splitLists">
                     <div className="listSection">
                        <h4 className="listTitle"><Shield size={16} color="var(--accent-orange)" /> Hosts</h4>
                        <div className="avatarList">
-                          {selectedCommunity.hosts.length > 0 ? selectedCommunity.hosts.map(h => (
+                          {liveSelectedCommunity.hosts.length > 0 ? liveSelectedCommunity.hosts.map(h => (
                             <div key={h.id} className="avatarItem" title={h.name}>
                                {h.photo
                                  // eslint-disable-next-line @next/next/no-img-element
@@ -217,14 +335,18 @@ export default function CommunitiesPage() {
                                  : <div className="p">{h.name[0]}</div>}
                                <span>{h.name}</span>
                             </div>
-                          )) : <p className="emptyState">No hosts assigned</p>}
+                          )) : (
+                            <p className="emptyState">
+                              No hosts assigned. As an admin you can approve join requests directly above.
+                            </p>
+                          )}
                        </div>
                     </div>
 
                     <div className="listSection">
                        <h4 className="listTitle"><Users size={16} color="var(--accent-cool)" /> Members</h4>
                        <div className="avatarList">
-                          {selectedCommunity.members.length > 0 ? selectedCommunity.members.map(m => (
+                          {liveSelectedCommunity.members.length > 0 ? liveSelectedCommunity.members.map(m => (
                             <div key={m.id} className="avatarItem" title={m.name}>
                                {m.photo
                                  // eslint-disable-next-line @next/next/no-img-element
@@ -321,6 +443,28 @@ export default function CommunitiesPage() {
                       value={newComm.tags}
                       onChange={e => setNewComm({...newComm, tags: e.target.value})}
                     />
+                 </div>
+                 <div className="formGroup full">
+                    <label>
+                      Host couple
+                      <span style={{ marginLeft: 6, fontWeight: 400, color: 'var(--ink-muted)', fontSize: '0.8rem' }}>
+                        — optional. If set, this couple can approve join requests from the mobile app.
+                      </span>
+                    </label>
+                    <select
+                      className="control"
+                      value={newComm.hostCoupleId}
+                      onChange={(e) => setNewComm({ ...newComm, hostCoupleId: e.target.value })}
+                    >
+                      <option value="">No host (admin will approve requests directly)</option>
+                      {couples
+                        .filter((c) => c.status !== 'banned')
+                        .map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.pairName} — {c.city}
+                          </option>
+                        ))}
+                    </select>
                  </div>
               </div>
 
@@ -552,6 +696,20 @@ export default function CommunitiesPage() {
         }
         .urlInput {
           margin-top: 0.5rem;
+        }
+        .actionBtn {
+          background: none;
+          border: none;
+          padding: 6px;
+          cursor: pointer;
+          border-radius: 6px;
+          transition: background 0.2s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .actionBtn:hover {
+          background: var(--surface-2);
         }
         @media (max-width: 600px) {
           .splitLists {

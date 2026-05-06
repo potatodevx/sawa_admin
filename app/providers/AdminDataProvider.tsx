@@ -20,6 +20,7 @@ export interface AddCommunityInput {
   city: string;
   tags?: string[];
   coverImageUrl?: string;
+  hostCoupleId?: string | null;
 }
 
 interface AdminContextType {
@@ -44,8 +45,15 @@ interface AdminContextType {
   deletePrompt: (id: string) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   deleteCouple: (id: string) => Promise<void>;
+  banCouple: (id: string, reason?: string) => Promise<void>;
+  unbanCouple: (id: string) => Promise<void>;
   deleteCommunity: (id: string) => Promise<void>;
   addCommunity: (data: AddCommunityInput) => Promise<void>;
+  processJoinRequest: (
+    communityId: string,
+    requestId: string,
+    decision: 'accept' | 'reject',
+  ) => Promise<void>;
   sendNotification: (title: string, message: string, recipientIds?: string[]) => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -234,6 +242,60 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const banCouple = async (id: string, reason?: string) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/couples/${id}/ban`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason: reason || null }),
+      });
+      if (res.ok) fetchAllData(token);
+    } catch (err) {
+      console.error("Ban Couple Error:", err);
+    }
+  };
+
+  const unbanCouple = async (id: string) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/couples/${id}/unban`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.ok) fetchAllData(token);
+    } catch (err) {
+      console.error("Unban Couple Error:", err);
+    }
+  };
+
+  const processJoinRequest = async (
+    communityId: string,
+    requestId: string,
+    decision: 'accept' | 'reject',
+  ) => {
+    if (!token) return;
+    try {
+      const res = await fetch(
+        `${API_URL}/communities/${communityId}/requests/${requestId}/${decision}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      if (res.ok) fetchAllData(token);
+    } catch (err) {
+      console.error("Process Join Request Error:", err);
+    }
+  };
+
   const deleteCommunity = async (id: string) => {
     if (!token) return;
     try {
@@ -312,8 +374,11 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         deletePrompt,
         deleteUser,
         deleteCouple,
+        banCouple,
+        unbanCouple,
         deleteCommunity,
         addCommunity,
+        processJoinRequest,
         sendNotification,
         refresh,
       }}

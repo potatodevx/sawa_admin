@@ -15,12 +15,17 @@ export interface UserItem {
   name: string;
   phone: string;
   city: string;
-  status: 'active' | 'inactive' | 'flagged';
+  status: 'active' | 'inactive' | 'flagged' | 'banned';
   joinedAt: string;
+  lastActiveAt?: string | null;
   coupleId?: string | null;
+  bannedAt?: string | null;
+  banReason?: string | null;
+  relationshipStatus?: string | null;
   profile?: {
     bio: string | null;
     primaryPhoto: string | null;
+    relationshipStatus?: string | null;
     answers: Array<{
       question: string;
       options: string[];
@@ -34,8 +39,16 @@ export interface CoupleItem {
   city: string;
   compatibilityScore: number;
   streakDays: number;
-  status: 'new' | 'engaged' | 'inactive';
-  partners?: Array<{ id: string; name: string; phone: string | null }>;
+  status: 'new' | 'engaged' | 'inactive' | 'banned';
+  relationshipStatus?: string | null;
+  bannedAt?: string | null;
+  banReason?: string | null;
+  partners?: Array<{
+    id: string;
+    name: string;
+    phone: string | null;
+    lastActiveAt?: string | null;
+  }>;
   bio?: string | null;
   primaryPhoto?: string | null;
   answers?: Array<{
@@ -70,6 +83,13 @@ export interface CommunityItem {
   growthRate: number;
   members: Array<{ id: string; name: string; photo: string | null }>;
   hosts: Array<{ id: string; name: string; photo: string | null }>;
+  pendingRequests?: Array<{
+    id: string;
+    coupleId: string;
+    name: string;
+    photo: string | null;
+  }>;
+  hasNoHost?: boolean;
 }
 
 export interface DashboardStats {
@@ -79,6 +99,7 @@ export interface DashboardStats {
   totalPrompts: number;
   activeToday: number;
   pendingReports?: number;
+  bannedCouples?: number;
 }
 
 export interface ReportItem {

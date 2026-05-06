@@ -8,13 +8,13 @@ import { formatDate } from "../lib/format";
 import { UserItem, CoupleItem } from "../lib/types";
 import {
   X, Phone, MapPin, Calendar, Quote, Heart, Target,
-  CreditCard, Zap, Users, User, Trash2
+  CreditCard, Zap, Users, User, Trash2, Ban, ShieldCheck, Heart as HeartIcon
 } from "lucide-react";
 
-type StatusFilter = "all" | "active" | "inactive" | "flagged";
+type StatusFilter = "all" | "active" | "inactive" | "flagged" | "banned";
 
 export default function UsersPage() {
-  const { users, couples, deleteUser, deleteCouple } = useAdminData();
+  const { users, couples, deleteUser, deleteCouple, banCouple, unbanCouple } = useAdminData();
   const [viewMode, setViewMode] = useState<"couples" | "singles">("couples");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [query, setQuery] = useState("");
@@ -23,6 +23,10 @@ export default function UsersPage() {
   const [deleteName, setDeleteName] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
   const [selectedCouple, setSelectedCouple] = useState<CoupleItem | null>(null);
+  // Ban modal state — captures optional reason before submitting.
+  const [banTarget, setBanTarget] = useState<{ id: string; name: string } | null>(null);
+  const [banReason, setBanReason] = useState("");
+  const [isBanProcessing, setIsBanProcessing] = useState(false);
 
   const filteredData = useMemo(() => {
     if (viewMode === "couples") {
@@ -55,6 +59,44 @@ export default function UsersPage() {
     }
     setIsDeleting(false);
     setDeleteId(null);
+  };
+
+  const openBanModal = (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
+    setBanTarget({ id, name });
+    setBanReason("");
+  };
+
+  const confirmBan = async () => {
+    if (!banTarget) return;
+    setIsBanProcessing(true);
+    await banCouple(banTarget.id, banReason || undefined);
+    setIsBanProcessing(false);
+    setBanTarget(null);
+  };
+
+  const handleUnban = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm('Restore this couple\u2019s access?')) return;
+    await unbanCouple(id);
+  };
+
+  // Surface readable status labels with consistent visual treatment.
+  const statusChip = (status: string) => {
+    switch (status) {
+      case 'banned':
+        return <span className="chip chipDanger" title="Couple is banned by admin"><Ban size={12} /> Banned</span>;
+      case 'engaged':
+        return <span className="chip chipSuccess">Engaged</span>;
+      case 'active':
+        return <span className="chip chipSuccess">Active</span>;
+      case 'inactive':
+        return <span className="chip chipWarning">Inactive</span>;
+      case 'new':
+        return <span className="chip chipWarning">New</span>;
+      default:
+        return <span className="chip">{status}</span>;
+    }
   };
 
   return (
@@ -97,6 +139,7 @@ export default function UsersPage() {
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
+                <option value="banned">Banned</option>
               </select>
             )}
           </div>
@@ -114,6 +157,7 @@ export default function UsersPage() {
                 <th>Couple Name</th>
                 <th>Partners</th>
                 <th>City</th>
+                <th>Relationship</th>
                 <th>Compatibility</th>
                 <th>Status</th>
                 <th style={{ textAlign: 'right' }}>Actions</th>
@@ -123,8 +167,9 @@ export default function UsersPage() {
                 <th>Name</th>
                 <th>Phone</th>
                 <th>City</th>
+                <th>Relationship</th>
                 <th>Joined</th>
-                <th>Subscription</th>
+                <th>Status</th>
                 <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
             )}
@@ -150,6 +195,15 @@ export default function UsersPage() {
                   </td>
                   <td>{couple.city}</td>
                   <td>
+                    {couple.relationshipStatus ? (
+                      <span className="chip" style={{ borderColor: 'var(--accent-orange)', color: 'var(--accent-orange)' }}>
+                        <HeartIcon size={12} /> {couple.relationshipStatus}
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--ink-muted)', fontSize: '0.8rem' }}>—</span>
+                    )}
+                  </td>
+                  <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <div style={{ width: '40px', height: '4px', background: '#eee', borderRadius: '2px' }}>
                         <div style={{ width: `${couple.compatibilityScore}%`, height: '100%', background: 'var(--accent-good)', borderRadius: '2px' }} />
@@ -157,12 +211,27 @@ export default function UsersPage() {
                       <span style={{ fontSize: '0.75rem' }}>{couple.compatibilityScore}%</span>
                     </div>
                   </td>
-                  <td>
-                    <span className={`chip ${couple.status === 'engaged' ? 'chipSuccess' : 'chipWarning'}`}>
-                      {couple.status}
-                    </span>
-                  </td>
+                  <td>{statusChip(couple.status)}</td>
                   <td style={{ textAlign: 'right' }}>
+                    {couple.status === 'banned' ? (
+                      <button
+                        onClick={(e) => handleUnban(e, couple.id)}
+                        className="actionBtn"
+                        style={{ color: 'var(--accent-good)' }}
+                        title="Unban — restore login access"
+                      >
+                        <ShieldCheck size={18} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => openBanModal(e, couple.id, couple.pairName)}
+                        className="actionBtn"
+                        style={{ color: 'var(--accent-warn, #d97706)' }}
+                        title="Ban — block both partners from login"
+                      >
+                        <Ban size={18} />
+                      </button>
+                    )}
                     <button
                       onClick={(e) => openDeleteModal(e, couple.id, couple.pairName)}
                       className="actionBtn delete"
@@ -182,13 +251,39 @@ export default function UsersPage() {
                   <td style={{ fontWeight: 600, color: 'var(--accent-cool)' }}>{user.name}</td>
                   <td style={{ color: 'var(--ink-muted)' }}>{user.phone}</td>
                   <td>{user.city}</td>
-                  <td>{formatDate(user.joinedAt)}</td>
                   <td>
-                    <span className={`chip ${user.status === 'active' ? 'chipSuccess' : 'chipDanger'}`}>
-                      {user.status === 'active' ? 'Active' : 'Inactive'}
-                    </span>
+                    {user.relationshipStatus ? (
+                      <span className="chip" style={{ borderColor: 'var(--accent-orange)', color: 'var(--accent-orange)' }}>
+                        <HeartIcon size={12} /> {user.relationshipStatus}
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--ink-muted)', fontSize: '0.8rem' }}>—</span>
+                    )}
                   </td>
+                  <td>{formatDate(user.joinedAt)}</td>
+                  <td>{statusChip(user.status)}</td>
                   <td style={{ textAlign: 'right' }}>
+                    {user.coupleId && (
+                      user.status === 'banned' ? (
+                        <button
+                          onClick={(e) => handleUnban(e, user.coupleId!)}
+                          className="actionBtn"
+                          style={{ color: 'var(--accent-good)' }}
+                          title="Unban couple"
+                        >
+                          <ShieldCheck size={18} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => openBanModal(e, user.coupleId!, user.name)}
+                          className="actionBtn"
+                          style={{ color: 'var(--accent-warn, #d97706)' }}
+                          title="Ban couple — both partners lose access"
+                        >
+                          <Ban size={18} />
+                        </button>
+                      )
+                    )}
                     <button
                       onClick={(e) => openDeleteModal(e, user.id, user.name)}
                       className="actionBtn delete"
@@ -215,6 +310,59 @@ export default function UsersPage() {
         isLoading={isDeleting}
       />
 
+      {banTarget && (
+        <div className="modalOverlay" onClick={() => !isBanProcessing && setBanTarget(null)}>
+          <div className="modalContent" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <button className="modalClose" onClick={() => !isBanProcessing && setBanTarget(null)} disabled={isBanProcessing}>
+              <X size={24} />
+            </button>
+            <div style={{ padding: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <Ban size={22} style={{ color: 'var(--accent-warn, #d97706)' }} />
+                <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Ban couple</h2>
+              </div>
+              <p style={{ marginTop: 0, color: 'var(--ink-muted)' }}>
+                Both partners of <strong>{banTarget.name}</strong> will be blocked from logging in or
+                accessing the app immediately. You can unban them at any time.
+              </p>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: 6 }}>
+                Reason (optional)
+              </label>
+              <textarea
+                className="control"
+                value={banReason}
+                onChange={(e) => setBanReason(e.target.value)}
+                placeholder="e.g. multiple harassment reports"
+                rows={3}
+                style={{ width: '100%', resize: 'vertical' }}
+                disabled={isBanProcessing}
+              />
+              <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
+                <button
+                  className="control"
+                  onClick={() => setBanTarget(null)}
+                  disabled={isBanProcessing}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="control"
+                  onClick={confirmBan}
+                  disabled={isBanProcessing}
+                  style={{
+                    background: 'var(--accent-warn, #d97706)',
+                    color: 'white',
+                    borderColor: 'var(--accent-warn, #d97706)',
+                  }}
+                >
+                  {isBanProcessing ? 'Banning…' : 'Ban couple'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {selectedUser && (
         <div className="modalOverlay" onClick={() => setSelectedUser(null)}>
            <div className="modalContent profileModal" onClick={e => e.stopPropagation()}>
@@ -239,7 +387,25 @@ export default function UsersPage() {
                     </div>
                     <div className="metaRow">
                       <Calendar size={14} /> <span>Joined {formatDate(selectedUser.joinedAt)}</span>
+                      {selectedUser.lastActiveAt && (
+                        <>
+                          <Zap size={14} style={{ marginLeft: '12px' }} />
+                          <span>Last active {formatDate(selectedUser.lastActiveAt)}</span>
+                        </>
+                      )}
                     </div>
+                    {selectedUser.relationshipStatus && (
+                      <div className="metaRow">
+                        <HeartIcon size={14} />
+                        <span>{selectedUser.relationshipStatus}</span>
+                      </div>
+                    )}
+                    {selectedUser.bannedAt && (
+                      <div className="metaRow" style={{ color: '#fca5a5' }}>
+                        <Ban size={14} />
+                        <span>Banned {formatDate(selectedUser.bannedAt)}{selectedUser.banReason ? ` — ${selectedUser.banReason}` : ''}</span>
+                      </div>
+                    )}
                  </div>
               </div>
 
@@ -307,6 +473,18 @@ export default function UsersPage() {
                       <MapPin size={14} /> <span>{selectedCouple.city}</span>
                       <Users size={14} style={{ marginLeft: '12px' }} /> <span>{selectedCouple.partners?.length || 0} Partners</span>
                     </div>
+                    {selectedCouple.relationshipStatus && (
+                      <div className="metaRow">
+                        <HeartIcon size={14} />
+                        <span>{selectedCouple.relationshipStatus}</span>
+                      </div>
+                    )}
+                    {selectedCouple.bannedAt && (
+                      <div className="metaRow" style={{ color: '#fecaca' }}>
+                        <Ban size={14} />
+                        <span>Banned {formatDate(selectedCouple.bannedAt)}{selectedCouple.banReason ? ` — ${selectedCouple.banReason}` : ''}</span>
+                      </div>
+                    )}
                     <div className="partnersBadgeRow">
                       {selectedCouple.partners?.map(p => (
                         <span key={p.id} className="partnerBadge">
