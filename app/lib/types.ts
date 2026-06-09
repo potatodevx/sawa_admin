@@ -111,6 +111,15 @@ export interface ReportItem {
   createdAt: string;
 }
 
+export interface BlockItem {
+  id: string;
+  blockerName: string;
+  blockerCoupleId: string;
+  targetName: string;
+  targetId: string;
+  targetType: 'user' | 'community';
+}
+
 export interface ChartDataPoint {
   name: string;
   users: number;

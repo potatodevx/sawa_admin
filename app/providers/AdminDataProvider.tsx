@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import type {
   ActivityItem,
+  BlockItem,
   CityStat,
   CommunityItem,
   CoupleItem,
@@ -39,6 +40,7 @@ interface AdminContextType {
   activities: ActivityItem[];
   prompts: PromptItem[];
   reports: ReportItem[];
+  blocks: BlockItem[];
   chartData: ChartDataPoint[];
   cityDistribution: CityStat[];
   userLogs: ActivityLog[];
@@ -84,6 +86,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [prompts, setPrompts] = useState<PromptItem[]>([]);
   const [reports, setReports] = useState<ReportItem[]>([]);
+  const [blocks, setBlocks] = useState<BlockItem[]>([]);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [userLogs, setUserLogs] = useState<ActivityLog[]>([]);
   const [communityLogs, setCommunityLogs] = useState<ActivityLog[]>([]);
@@ -120,6 +123,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         setActivities(json.data.activities);
         setPrompts(json.data.prompts);
         setReports(json.data.reports || []);
+        setBlocks(json.data.blocks || []);
         setChartData(json.data.chartData || []);
         setUserLogs(json.data.userLogs || []);
         setCommunityLogs(json.data.communityLogs || []);
@@ -405,6 +409,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         activities,
         prompts,
         reports,
+        blocks,
         chartData,
         cityDistribution,
         userLogs,

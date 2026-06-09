@@ -15,6 +15,7 @@ const navItems = [
   { href: "/onboarding", label: "Onboarding", icon: "mdi-clipboard-list-outline" },
   { href: "/notifications", label: "Send Notifications", icon: "mdi-bell-ring" },
   { href: "/reports", label: "Reports", icon: "mdi-alert-octagon" },
+  { href: "/blocks", label: "Blocks", icon: "mdi-block-helper" },
 ];
 
 interface SidebarProps {
