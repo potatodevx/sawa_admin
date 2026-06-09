@@ -58,6 +58,7 @@ interface AdminContextType {
   deleteCommunity: (id: string) => Promise<void>;
   addCommunity: (data: AddCommunityInput) => Promise<void>;
   updateCommunity: (id: string, data: UpdateCommunityInput) => Promise<void>;
+  resolveReport: (id: string, status: 'resolved' | 'dismissed') => Promise<void>;
   processJoinRequest: (
     communityId: string,
     requestId: string,
@@ -337,6 +338,23 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const resolveReport = async (id: string, status: 'resolved' | 'dismissed') => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/reports/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) fetchAllData(token);
+    } catch (err) {
+      console.error("Resolve Report Error:", err);
+    }
+  };
+
   const addCommunity = async (data: AddCommunityInput) => {
     if (!token) return;
     try {
@@ -405,6 +423,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         deleteCommunity,
         addCommunity,
         updateCommunity,
+        resolveReport,
         processJoinRequest,
         sendNotification,
         refresh,
