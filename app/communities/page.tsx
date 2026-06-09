@@ -6,12 +6,13 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { useAdminData } from "../providers/AdminDataProvider";
 import { 
   Plus, X, Users, Shield, MapPin, Hash, 
-  Trash2, Upload, AlertCircle, Check, XCircle
+  Trash2, Upload, AlertCircle, Check, XCircle, Pencil
 } from "lucide-react";
 import { CommunityItem } from "../lib/types";
+import { UpdateCommunityInput } from "../providers/AdminDataProvider";
 
 export default function CommunitiesPage() {
-  const { communities, couples, deleteCommunity, addCommunity, processJoinRequest } = useAdminData();
+  const { communities, couples, deleteCommunity, addCommunity, updateCommunity, processJoinRequest } = useAdminData();
   const [minMembers, setMinMembers] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -20,6 +21,12 @@ export default function CommunitiesPage() {
   
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState<CommunityItem | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editComm, setEditComm] = useState<UpdateCommunityInput & { tags: string }>({
+    name: "", description: "", city: "", tags: "", coverImageUrl: "",
+  });
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
   
   const [newComm, setNewComm] = useState<{
     name: string;
@@ -60,6 +67,41 @@ export default function CommunitiesPage() {
     await deleteCommunity(deleteId);
     setIsDeleting(false);
     setDeleteId(null);
+  };
+
+  const openEditModal = (e: React.MouseEvent, community: CommunityItem) => {
+    e.stopPropagation();
+    setEditComm({
+      name: community.name,
+      description: community.description || "",
+      city: community.city || "",
+      tags: community.tags?.join(', ') || "",
+      coverImageUrl: community.coverImageUrl || "",
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert("Image size should be less than 5MB"); return; }
+    const reader = new FileReader();
+    reader.onloadend = () => setEditComm(prev => ({ ...prev, coverImageUrl: reader.result as string }));
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!liveSelectedCommunity) return;
+    setIsSavingEdit(true);
+    await updateCommunity(liveSelectedCommunity.id, {
+      name: editComm.name,
+      description: editComm.description,
+      city: editComm.city,
+      coverImageUrl: editComm.coverImageUrl,
+      tags: editComm.tags.split(',').map(t => t.trim()).filter(Boolean),
+    });
+    setIsSavingEdit(false);
+    setShowEditModal(false);
   };
 
   const handleCreate = async () => {
@@ -248,9 +290,23 @@ export default function CommunitiesPage() {
       {liveSelectedCommunity && (
         <div className="modalOverlay" onClick={() => setSelectedCommunity(null)}>
            <div className="modalContent detailModal" onClick={e => e.stopPropagation()}>
-              <button className="modalClose" onClick={() => setSelectedCommunity(null)}>
-                <X size={24} />
-              </button>
+              <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 10, display: 'flex', gap: '0.5rem' }}>
+                <button
+                  className="actionBtn"
+                  title="Edit Community"
+                  style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '8px', padding: '8px' }}
+                  onClick={(e) => liveSelectedCommunity && openEditModal(e, liveSelectedCommunity)}
+                >
+                  <Pencil size={18} color="var(--accent-orange)" />
+                </button>
+                <button
+                  className="modalClose"
+                  style={{ position: 'static' }}
+                  onClick={() => setSelectedCommunity(null)}
+                >
+                  <X size={24} />
+                </button>
+              </div>
               
               <div className="detailHero">
                  {liveSelectedCommunity.coverImageUrl ? (
@@ -473,6 +529,73 @@ export default function CommunitiesPage() {
                  <button className="buttonPrimary" onClick={handleCreate}>Create Community</button>
               </div>
            </div>
+        </div>
+      )}
+
+      {/* Edit Community Modal */}
+      {showEditModal && (
+        <div className="modalOverlay" onClick={() => setShowEditModal(false)}>
+          <div className="modalContent createModal" onClick={e => e.stopPropagation()}>
+            <button className="modalClose" onClick={() => setShowEditModal(false)}><X size={24} /></button>
+            <h3 className="sectionTitle">Edit Community</h3>
+            <div className="formGrid">
+              <div className="formGroup">
+                <label>Community Name*</label>
+                <input className="control" placeholder="Community name"
+                  value={editComm.name}
+                  onChange={e => setEditComm({...editComm, name: e.target.value})} />
+              </div>
+              <div className="formGroup">
+                <label>City*</label>
+                <input className="control" placeholder="e.g. Mumbai"
+                  value={editComm.city}
+                  onChange={e => setEditComm({...editComm, city: e.target.value})} />
+              </div>
+              <div className="formGroup full">
+                <label>Description</label>
+                <textarea className="control" rows={3} placeholder="What is this community about?"
+                  value={editComm.description}
+                  onChange={e => setEditComm({...editComm, description: e.target.value})} />
+              </div>
+              <div className="formGroup full">
+                <label>Cover Image</label>
+                <div className="uploadControl">
+                  {editComm.coverImageUrl ? (
+                    <div className="imagePreview">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={editComm.coverImageUrl} alt="Preview" />
+                      <button className="removeImgBtn" onClick={() => setEditComm({...editComm, coverImageUrl: ""})}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button className="uploadPlaceholder" onClick={() => editFileInputRef.current?.click()}>
+                      <Upload size={24} /><span>Upload Cover Photo</span>
+                    </button>
+                  )}
+                  <input type="file" ref={editFileInputRef} onChange={handleEditFileChange} hidden accept="image/*" />
+                  <div className="urlInput">
+                    <label>Or paste image URL</label>
+                    <input className="control" placeholder="https://..."
+                      value={editComm.coverImageUrl}
+                      onChange={e => setEditComm({...editComm, coverImageUrl: e.target.value})} />
+                  </div>
+                </div>
+              </div>
+              <div className="formGroup full">
+                <label>Tags (comma separated)</label>
+                <input className="control" placeholder="hiking, fitness, outdoors"
+                  value={editComm.tags}
+                  onChange={e => setEditComm({...editComm, tags: e.target.value})} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', justifyContent: 'flex-end' }}>
+              <button className="buttonGhost" onClick={() => setShowEditModal(false)}>Cancel</button>
+              <button className="buttonPrimary" onClick={handleSaveEdit} disabled={isSavingEdit}>
+                {isSavingEdit ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

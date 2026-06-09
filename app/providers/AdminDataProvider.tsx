@@ -23,6 +23,14 @@ export interface AddCommunityInput {
   hostCoupleId?: string | null;
 }
 
+export interface UpdateCommunityInput {
+  name?: string;
+  description?: string;
+  city?: string;
+  tags?: string[];
+  coverImageUrl?: string;
+}
+
 interface AdminContextType {
   stats: DashboardStats;
   users: UserItem[];
@@ -49,6 +57,7 @@ interface AdminContextType {
   unbanCouple: (id: string) => Promise<void>;
   deleteCommunity: (id: string) => Promise<void>;
   addCommunity: (data: AddCommunityInput) => Promise<void>;
+  updateCommunity: (id: string, data: UpdateCommunityInput) => Promise<void>;
   processJoinRequest: (
     communityId: string,
     requestId: string,
@@ -311,6 +320,23 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateCommunity = async (id: string, data: UpdateCommunityInput) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/communities/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) fetchAllData(token);
+    } catch (err) {
+      console.error("Update Community Error:", err);
+    }
+  };
+
   const addCommunity = async (data: AddCommunityInput) => {
     if (!token) return;
     try {
@@ -378,6 +404,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         unbanCouple,
         deleteCommunity,
         addCommunity,
+        updateCommunity,
         processJoinRequest,
         sendNotification,
         refresh,
