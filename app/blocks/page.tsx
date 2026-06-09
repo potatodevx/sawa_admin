@@ -6,9 +6,10 @@ import { useAdminData } from "../providers/AdminDataProvider";
 import { statusClass } from "../lib/format";
 
 export default function BlocksPage() {
-  const { blocks } = useAdminData();
+  const { blocks, adminUnblock, refresh } = useAdminData();
   const [filter, setFilter] = useState<"all" | "user" | "community">("all");
   const [search, setSearch] = useState("");
+  const [unblocking, setUnblocking] = useState<string | null>(null);
 
   const filtered = blocks
     .filter((b) => filter === "all" || b.targetType === filter)
@@ -22,11 +23,39 @@ export default function BlocksPage() {
   const userBlockCount = blocks.filter((b) => b.targetType === "user").length;
   const communityBlockCount = blocks.filter((b) => b.targetType === "community").length;
 
+  const handleUnblock = async (blockerCoupleId: string, targetId: string, id: string) => {
+    if (!confirm("Remove this block? The blocker will be able to see and interact with the target again.")) return;
+    setUnblocking(id);
+    try {
+      await adminUnblock(blockerCoupleId, targetId);
+    } finally {
+      setUnblocking(null);
+    }
+  };
+
   return (
     <AdminShell
       title="Blocks"
       subtitle="View all user and community blocks across the platform."
     >
+      {/* Header row with refresh */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
+        <button
+          onClick={refresh}
+          style={{
+            padding: "0.45rem 1.1rem",
+            borderRadius: "8px",
+            border: "1px solid rgba(0,0,0,0.15)",
+            background: "rgba(255,255,255,0.8)",
+            cursor: "pointer",
+            fontSize: "0.85rem",
+            fontWeight: 600,
+          }}
+        >
+          ↻ Refresh
+        </button>
+      </div>
+
       {/* Summary cards */}
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         <div className="glassCard" style={{ flex: 1, minWidth: 160, padding: "1rem 1.25rem" }}>
@@ -93,12 +122,13 @@ export default function BlocksPage() {
               <th>Blocked Target</th>
               <th>Target Type</th>
               <th>Target ID</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ textAlign: "center", padding: "2rem", color: "var(--ink-muted)" }}>
+                <td colSpan={5} style={{ textAlign: "center", padding: "2rem", color: "var(--ink-muted)" }}>
                   {search ? "No matches found." : "No blocks recorded yet."}
                 </td>
               </tr>
@@ -120,6 +150,24 @@ export default function BlocksPage() {
                     <span style={{ fontSize: "0.75rem", color: "var(--ink-muted)", fontFamily: "monospace" }}>
                       {block.targetId}
                     </span>
+                  </td>
+                  <td>
+                    <button
+                      disabled={unblocking === block.id}
+                      onClick={() => handleUnblock(block.blockerCoupleId, block.targetId, block.id)}
+                      style={{
+                        padding: "0.3rem 0.75rem",
+                        borderRadius: "6px",
+                        border: "none",
+                        background: unblocking === block.id ? "#ccc" : "#ef4444",
+                        color: "#fff",
+                        fontWeight: 600,
+                        cursor: unblocking === block.id ? "not-allowed" : "pointer",
+                        fontSize: "0.8rem",
+                      }}
+                    >
+                      {unblocking === block.id ? "…" : "Unblock"}
+                    </button>
                   </td>
                 </tr>
               ))

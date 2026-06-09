@@ -61,6 +61,7 @@ interface AdminContextType {
   addCommunity: (data: AddCommunityInput) => Promise<void>;
   updateCommunity: (id: string, data: UpdateCommunityInput) => Promise<void>;
   resolveReport: (id: string, status: 'resolved' | 'dismissed') => Promise<void>;
+  adminUnblock: (blockerCoupleId: string, targetId: string) => Promise<void>;
   processJoinRequest: (
     communityId: string,
     requestId: string,
@@ -342,6 +343,20 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const adminUnblock = async (blockerCoupleId: string, targetId: string) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/blocks`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ blockerCoupleId, targetId }),
+      });
+      if (res.ok) fetchAllData(token);
+    } catch (err) {
+      console.error("Admin Unblock Error:", err);
+    }
+  };
+
   const resolveReport = async (id: string, status: 'resolved' | 'dismissed') => {
     if (!token) return;
     try {
@@ -429,6 +444,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         addCommunity,
         updateCommunity,
         resolveReport,
+        adminUnblock,
         processJoinRequest,
         sendNotification,
         refresh,
