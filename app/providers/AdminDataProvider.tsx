@@ -200,13 +200,10 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_URL}/prompts`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ title, category }),
       });
-      if (res.ok) fetchAllData(token);
+      if (res.ok) silentRefresh(token);
     } catch (err) {
       console.error("Add Prompt Error:", err);
     }
@@ -214,93 +211,129 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
 
   const togglePrompt = async (id: string) => {
     if (!token) return;
+    // Optimistic: flip isActive immediately so the UI responds instantly.
+    setPrompts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p))
+    );
     try {
       const res = await fetch(`${API_URL}/prompts/${id}/toggle`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) fetchAllData(token);
+      // On failure, revert.
+      if (!res.ok) setPrompts((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p))
+      );
     } catch (err) {
       console.error("Toggle Prompt Error:", err);
+      setPrompts((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p))
+      );
     }
   };
 
   const deletePrompt = async (id: string) => {
     if (!token) return;
+    // Optimistic: remove immediately.
+    setPrompts((prev) => prev.filter((p) => p.id !== id));
     try {
       const res = await fetch(`${API_URL}/prompts/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) fetchAllData(token);
+      if (!res.ok) silentRefresh(token); // revert via fresh fetch on failure
     } catch (err) {
       console.error("Delete Prompt Error:", err);
+      silentRefresh(token);
     }
   };
 
   const deleteUser = async (id: string) => {
     if (!token) return;
+    // Optimistic: remove from both users and couples lists instantly.
+    const removedUser = users.find((u) => u.id === id);
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+    if (removedUser?.coupleId) {
+      setCouples((prev) => prev.filter((c) => c.id !== removedUser.coupleId));
+    }
     try {
       const res = await fetch(`${API_URL}/users/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) fetchAllData(token);
+      if (!res.ok) silentRefresh(token);
     } catch (err) {
       console.error("Delete User Error:", err);
+      silentRefresh(token);
     }
   };
 
   const deleteCouple = async (id: string) => {
     if (!token) return;
+    // Optimistic: remove couple and both partner users instantly.
+    setCouples((prev) => prev.filter((c) => c.id !== id));
+    setUsers((prev) => prev.filter((u) => u.coupleId !== id));
     try {
       const res = await fetch(`${API_URL}/couples/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) fetchAllData(token);
+      if (!res.ok) silentRefresh(token);
     } catch (err) {
       console.error("Delete Couple Error:", err);
+      silentRefresh(token);
     }
   };
 
   const banCouple = async (id: string, reason?: string) => {
     if (!token) return;
+    const now = new Date().toISOString();
+    // Optimistic: mark as banned immediately.
+    setCouples((prev) =>
+      prev.map((c) =>
+        c.id === id ? { ...c, status: "banned", bannedAt: now, banReason: reason || null } : c
+      )
+    );
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.coupleId === id ? { ...u, status: "banned", bannedAt: now } : u
+      )
+    );
     try {
       const res = await fetch(`${API_URL}/couples/${id}/ban`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ reason: reason || null }),
       });
-      if (res.ok) fetchAllData(token);
+      if (!res.ok) silentRefresh(token);
     } catch (err) {
       console.error("Ban Couple Error:", err);
+      silentRefresh(token);
     }
   };
 
   const unbanCouple = async (id: string) => {
     if (!token) return;
+    // Optimistic: restore status immediately.
+    setCouples((prev) =>
+      prev.map((c) =>
+        c.id === id ? { ...c, status: "active", bannedAt: null, banReason: null } : c
+      )
+    );
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.coupleId === id ? { ...u, status: "active", bannedAt: null } : u
+      )
+    );
     try {
       const res = await fetch(`${API_URL}/couples/${id}/unban`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) fetchAllData(token);
+      if (!res.ok) silentRefresh(token);
     } catch (err) {
       console.error("Unban Couple Error:", err);
+      silentRefresh(token);
     }
   };
 
@@ -313,14 +346,9 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(
         `${API_URL}/communities/${communityId}/requests/${requestId}/${decision}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        { method: "POST", headers: { Authorization: `Bearer ${token}` } },
       );
-      if (res.ok) fetchAllData(token);
+      if (res.ok) silentRefresh(token);
     } catch (err) {
       console.error("Process Join Request Error:", err);
     }
@@ -328,64 +356,76 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
 
   const deleteCommunity = async (id: string) => {
     if (!token) return;
+    // Optimistic remove.
+    setCommunities((prev) => prev.filter((c) => c.id !== id));
     try {
       const res = await fetch(`${API_URL}/communities/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) fetchAllData(token);
+      if (!res.ok) silentRefresh(token);
     } catch (err) {
       console.error("Delete Community Error:", err);
+      silentRefresh(token);
     }
   };
 
   const updateCommunity = async (id: string, data: UpdateCommunityInput) => {
     if (!token) return;
+    // Optimistic update.
+    setCommunities((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...data } : c))
+    );
     try {
       const res = await fetch(`${API_URL}/communities/${id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
       });
-      if (res.ok) fetchAllData(token);
+      if (!res.ok) silentRefresh(token);
     } catch (err) {
       console.error("Update Community Error:", err);
+      silentRefresh(token);
     }
   };
 
   const adminUnblock = async (blockerCoupleId: string, targetId: string) => {
     if (!token) return;
+    // Optimistic: remove the block entry from list.
+    setBlocks((prev) =>
+      prev.filter(
+        (b) => !(b.blockerCoupleId === blockerCoupleId && b.targetId === targetId)
+      )
+    );
     try {
       const res = await fetch(`${API_URL}/blocks`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ blockerCoupleId, targetId }),
       });
-      if (res.ok) fetchAllData(token);
+      if (!res.ok) silentRefresh(token);
     } catch (err) {
       console.error("Admin Unblock Error:", err);
+      silentRefresh(token);
     }
   };
 
   const resolveReport = async (id: string, status: 'resolved' | 'dismissed') => {
     if (!token) return;
+    // Optimistic: update status immediately.
+    setReports((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status } : r))
+    );
     try {
       const res = await fetch(`${API_URL}/reports/${id}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
       });
-      if (res.ok) fetchAllData(token);
+      if (!res.ok) silentRefresh(token);
     } catch (err) {
       console.error("Resolve Report Error:", err);
+      silentRefresh(token);
     }
   };
 
@@ -394,22 +434,46 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_URL}/communities`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
       });
-      if (res.ok) fetchAllData(token);
+      // Need the server-assigned ID, so refresh silently.
+      if (res.ok) silentRefresh(token);
     } catch (err) {
       console.error("Add Community Error:", err);
     }
   };
 
+  // Silent refresh — fetches fresh data in the background without touching
+  // isLoading, so the page never blanks out.
+  const silentRefresh = useCallback(async (authToken: string) => {
+    try {
+      const res = await fetch(`${API_URL}/data`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.success) {
+        setStats(json.data.stats);
+        setUsers(json.data.users);
+        setCouples(json.data.couples);
+        setCommunities(json.data.communities);
+        setActivities(json.data.activities);
+        setPrompts(json.data.prompts);
+        setReports(json.data.reports || []);
+        setBlocks(json.data.blocks || []);
+        setChartData(json.data.chartData || []);
+        setUserLogs(json.data.userLogs || []);
+        setCommunityLogs(json.data.communityLogs || []);
+        setCityDistribution(json.data.cityDistribution || []);
+      }
+    } catch { /* silent */ }
+  }, [API_URL]);
+
   const refresh = useCallback(async () => {
     if (!token) return;
-    await fetchAllData(token);
-  }, [token, fetchAllData]);
+    await silentRefresh(token);
+  }, [token, silentRefresh]);
 
   const sendNotification = async (title: string, message: string, recipientIds?: string[]) => {
     if (!token) return;
