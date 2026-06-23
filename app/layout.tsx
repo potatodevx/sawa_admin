@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AdminDataProvider } from "./providers/AdminDataProvider";
+import { ToastProvider } from "./components/Toast";
 
 export const metadata: Metadata = {
   title: "SAWA Admin Console",
@@ -43,7 +44,9 @@ export default function RootLayout({
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" />
       </head>
       <body>
-        <AdminDataProvider>{children}</AdminDataProvider>
+        <ToastProvider>
+          <AdminDataProvider>{children}</AdminDataProvider>
+        </ToastProvider>
       </body>
     </html>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { useToast } from "../components/Toast";
 import type {
   ActivityItem,
   BlockItem,
@@ -97,6 +98,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1/admin";
+  const toast = useToast();
 
   // Clear auth state and wipe stored token — called on any session failure.
   const forceLogout = useCallback(() => {
@@ -203,15 +205,16 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ title, category }),
       });
-      if (res.ok) silentRefresh(token);
+      if (res.ok) { toast("Prompt added successfully.", "success"); silentRefresh(token); }
+      else toast("Failed to add prompt.", "error");
     } catch (err) {
       console.error("Add Prompt Error:", err);
+      toast("Failed to add prompt.", "error");
     }
   };
 
   const togglePrompt = async (id: string) => {
     if (!token) return;
-    // Optimistic: flip isActive immediately so the UI responds instantly.
     setPrompts((prev) =>
       prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p))
     );
@@ -220,37 +223,36 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
-      // On failure, revert.
-      if (!res.ok) setPrompts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p))
-      );
+      if (!res.ok) {
+        setPrompts((prev) => prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p)));
+        toast("Failed to update prompt.", "error");
+      }
     } catch (err) {
       console.error("Toggle Prompt Error:", err);
-      setPrompts((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p))
-      );
+      setPrompts((prev) => prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p)));
+      toast("Failed to update prompt.", "error");
     }
   };
 
   const deletePrompt = async (id: string) => {
     if (!token) return;
-    // Optimistic: remove immediately.
     setPrompts((prev) => prev.filter((p) => p.id !== id));
     try {
       const res = await fetch(`${API_URL}/prompts/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) silentRefresh(token); // revert via fresh fetch on failure
+      if (res.ok) toast("Prompt deleted.", "success");
+      else { silentRefresh(token); toast("Failed to delete prompt.", "error"); }
     } catch (err) {
       console.error("Delete Prompt Error:", err);
       silentRefresh(token);
+      toast("Failed to delete prompt.", "error");
     }
   };
 
   const deleteUser = async (id: string) => {
     if (!token) return;
-    // Optimistic: remove from both users and couples lists instantly.
     const removedUser = users.find((u) => u.id === id);
     setUsers((prev) => prev.filter((u) => u.id !== id));
     if (removedUser?.coupleId) {
@@ -261,16 +263,17 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) silentRefresh(token);
+      if (res.ok) toast(`User deleted successfully.`, "success");
+      else { silentRefresh(token); toast("Failed to delete user.", "error"); }
     } catch (err) {
       console.error("Delete User Error:", err);
       silentRefresh(token);
+      toast("Failed to delete user.", "error");
     }
   };
 
   const deleteCouple = async (id: string) => {
     if (!token) return;
-    // Optimistic: remove couple and both partner users instantly.
     setCouples((prev) => prev.filter((c) => c.id !== id));
     setUsers((prev) => prev.filter((u) => u.coupleId !== id));
     try {
@@ -278,17 +281,18 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) silentRefresh(token);
+      if (res.ok) toast("Couple and all associated data deleted.", "success");
+      else { silentRefresh(token); toast("Failed to delete couple.", "error"); }
     } catch (err) {
       console.error("Delete Couple Error:", err);
       silentRefresh(token);
+      toast("Failed to delete couple.", "error");
     }
   };
 
   const banCouple = async (id: string, reason?: string) => {
     if (!token) return;
     const now = new Date().toISOString();
-    // Optimistic: mark as banned immediately.
     setCouples((prev) =>
       prev.map((c) =>
         c.id === id ? { ...c, status: "banned", bannedAt: now, banReason: reason || null } : c
@@ -305,16 +309,17 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ reason: reason || null }),
       });
-      if (!res.ok) silentRefresh(token);
+      if (res.ok) toast("Couple banned. Both partners are now blocked.", "success");
+      else { silentRefresh(token); toast("Failed to ban couple.", "error"); }
     } catch (err) {
       console.error("Ban Couple Error:", err);
       silentRefresh(token);
+      toast("Failed to ban couple.", "error");
     }
   };
 
   const unbanCouple = async (id: string) => {
     if (!token) return;
-    // Optimistic: restore status immediately.
     setCouples((prev) =>
       prev.map((c) =>
         c.id === id ? { ...c, status: "active", bannedAt: null, banReason: null } : c
@@ -330,10 +335,12 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) silentRefresh(token);
+      if (res.ok) toast("Couple unbanned. Access restored.", "success");
+      else { silentRefresh(token); toast("Failed to unban couple.", "error"); }
     } catch (err) {
       console.error("Unban Couple Error:", err);
       silentRefresh(token);
+      toast("Failed to unban couple.", "error");
     }
   };
 
@@ -348,31 +355,33 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         `${API_URL}/communities/${communityId}/requests/${requestId}/${decision}`,
         { method: "POST", headers: { Authorization: `Bearer ${token}` } },
       );
-      if (res.ok) silentRefresh(token);
+      if (res.ok) { toast(`Join request ${decision}ed.`, "success"); silentRefresh(token); }
+      else toast("Failed to process join request.", "error");
     } catch (err) {
       console.error("Process Join Request Error:", err);
+      toast("Failed to process join request.", "error");
     }
   };
 
   const deleteCommunity = async (id: string) => {
     if (!token) return;
-    // Optimistic remove.
     setCommunities((prev) => prev.filter((c) => c.id !== id));
     try {
       const res = await fetch(`${API_URL}/communities/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) silentRefresh(token);
+      if (res.ok) toast("Community deleted.", "success");
+      else { silentRefresh(token); toast("Failed to delete community.", "error"); }
     } catch (err) {
       console.error("Delete Community Error:", err);
       silentRefresh(token);
+      toast("Failed to delete community.", "error");
     }
   };
 
   const updateCommunity = async (id: string, data: UpdateCommunityInput) => {
     if (!token) return;
-    // Optimistic update.
     setCommunities((prev) =>
       prev.map((c) => (c.id === id ? { ...c, ...data } : c))
     );
@@ -382,16 +391,17 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
       });
-      if (!res.ok) silentRefresh(token);
+      if (res.ok) toast("Community updated.", "success");
+      else { silentRefresh(token); toast("Failed to update community.", "error"); }
     } catch (err) {
       console.error("Update Community Error:", err);
       silentRefresh(token);
+      toast("Failed to update community.", "error");
     }
   };
 
   const adminUnblock = async (blockerCoupleId: string, targetId: string) => {
     if (!token) return;
-    // Optimistic: remove the block entry from list.
     setBlocks((prev) =>
       prev.filter(
         (b) => !(b.blockerCoupleId === blockerCoupleId && b.targetId === targetId)
@@ -403,16 +413,17 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ blockerCoupleId, targetId }),
       });
-      if (!res.ok) silentRefresh(token);
+      if (res.ok) toast("Block removed successfully.", "success");
+      else { silentRefresh(token); toast("Failed to remove block.", "error"); }
     } catch (err) {
       console.error("Admin Unblock Error:", err);
       silentRefresh(token);
+      toast("Failed to remove block.", "error");
     }
   };
 
   const resolveReport = async (id: string, status: 'resolved' | 'dismissed') => {
     if (!token) return;
-    // Optimistic: update status immediately.
     setReports((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status } : r))
     );
@@ -422,10 +433,12 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
       });
-      if (!res.ok) silentRefresh(token);
+      if (res.ok) toast(`Report marked as ${status}.`, "success");
+      else { silentRefresh(token); toast("Failed to resolve report.", "error"); }
     } catch (err) {
       console.error("Resolve Report Error:", err);
       silentRefresh(token);
+      toast("Failed to resolve report.", "error");
     }
   };
 
@@ -437,10 +450,11 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
       });
-      // Need the server-assigned ID, so refresh silently.
-      if (res.ok) silentRefresh(token);
+      if (res.ok) { toast("Community created successfully.", "success"); silentRefresh(token); }
+      else toast("Failed to create community.", "error");
     } catch (err) {
       console.error("Add Community Error:", err);
+      toast("Failed to create community.", "error");
     }
   };
 
