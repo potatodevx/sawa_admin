@@ -98,25 +98,30 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1/admin";
 
+  // Clear auth state and wipe stored token — called on any session failure.
+  const forceLogout = useCallback(() => {
+    localStorage.removeItem("admin_token");
+    setToken(null);
+    setIsAuthenticated(false);
+  }, []);
+
   const fetchAllData = useCallback(async (authToken: string) => {
     setIsLoading(true);
     try {
       const res = await fetch(`${API_URL}/data`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
+        headers: { Authorization: `Bearer ${authToken}` },
       });
 
-      // 401 → token expired/invalid; force re-login
-      if (res.status === 401) {
-        localStorage.removeItem("admin_token");
-        setToken(null);
-        setIsAuthenticated(false);
+      // Any non-ok status — treat as session failure and force re-login
+      if (!res.ok) {
+        forceLogout();
         return;
       }
 
       const json = await res.json();
       if (json.success) {
+        // Only mark authenticated after the server confirms the token is valid
+        setIsAuthenticated(true);
         setStats(json.data.stats);
         setUsers(json.data.users);
         setCouples(json.data.couples);
@@ -129,19 +134,23 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         setUserLogs(json.data.userLogs || []);
         setCommunityLogs(json.data.communityLogs || []);
         setCityDistribution(json.data.cityDistribution || []);
+      } else {
+        forceLogout();
       }
     } catch (err) {
+      // Network error — clear session to avoid empty dashboard
       console.error("Failed to fetch admin data:", err);
+      forceLogout();
     } finally {
       setIsLoading(false);
     }
-  }, [API_URL]);
+  }, [API_URL, forceLogout]);
 
   useEffect(() => {
     const savedToken = localStorage.getItem("admin_token");
     if (savedToken) {
+      // Don't set isAuthenticated=true yet — wait for the server to validate.
       setToken(savedToken);
-      setIsAuthenticated(true);
       fetchAllData(savedToken);
     } else {
       setIsLoading(false);
@@ -172,12 +181,18 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.removeItem("admin_token");
-    setToken(null);
-    setIsAuthenticated(false);
+    forceLogout();
     setUsers([]);
+    setCouples([]);
+    setCommunities([]);
     setPrompts([]);
     setReports([]);
+    setBlocks([]);
+    setActivities([]);
+    setChartData([]);
+    setUserLogs([]);
+    setCommunityLogs([]);
+    setCityDistribution([]);
   };
 
   const addPrompt = async (title: string, category: string) => {
