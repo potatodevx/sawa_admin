@@ -22,7 +22,7 @@ export default function CommunitiesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedCommunity, setSelectedCommunity] = useState<CommunityItem | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editComm, setEditComm] = useState<UpdateCommunityInput & { tags: string }>({
+  const [editComm, setEditComm] = useState<Omit<UpdateCommunityInput, 'tags'> & { tags: string }>({
     name: "", description: "", city: "", tags: "", coverImageUrl: "",
   });
   const [isSavingEdit, setIsSavingEdit] = useState(false);
