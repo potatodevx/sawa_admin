@@ -216,7 +216,7 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
   const togglePrompt = async (id: string) => {
     if (!token) return;
     setPrompts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p))
+      prev.map((p) => (p.id === id ? { ...p, active: !p.active } : p))
     );
     try {
       const res = await fetch(`${API_URL}/prompts/${id}/toggle`, {
@@ -224,12 +224,12 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        setPrompts((prev) => prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p)));
+        setPrompts((prev) => prev.map((p) => (p.id === id ? { ...p, active: !p.active } : p)));
         toast("Failed to update prompt.", "error");
       }
     } catch (err) {
       console.error("Toggle Prompt Error:", err);
-      setPrompts((prev) => prev.map((p) => (p.id === id ? { ...p, isActive: !p.isActive } : p)));
+      setPrompts((prev) => prev.map((p) => (p.id === id ? { ...p, active: !p.active } : p)));
       toast("Failed to update prompt.", "error");
     }
   };
@@ -322,12 +322,12 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
     if (!token) return;
     setCouples((prev) =>
       prev.map((c) =>
-        c.id === id ? { ...c, status: "active", bannedAt: null, banReason: null } : c
+        c.id === id ? { ...c, status: "engaged" as const, bannedAt: null, banReason: null } : c
       )
     );
     setUsers((prev) =>
       prev.map((u) =>
-        u.coupleId === id ? { ...u, status: "active", bannedAt: null } : u
+        u.coupleId === id ? { ...u, status: "active" as const, bannedAt: null } : u
       )
     );
     try {

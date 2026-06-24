@@ -87,7 +87,7 @@ export default function UsersPage() {
       case 'banned':
         return <span className="chip chipDanger" title="Couple is banned by admin"><Ban size={12} /> Banned</span>;
       case 'engaged':
-        return <span className="chip chipSuccess">Engaged</span>;
+        return <span className="chip chipSuccess">Active</span>;
       case 'active':
         return <span className="chip chipSuccess">Active</span>;
       case 'inactive':
