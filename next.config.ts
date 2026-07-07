@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_API_URL:
       process.env.NEXT_PUBLIC_API_URL ||
-      "https://sawaserver-backend.up.railway.app/api/v1/admin",
+      "https://sawaserver-production.up.railway.app/api/v1/admin",
   },
 };
 
