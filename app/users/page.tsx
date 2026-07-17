@@ -184,13 +184,36 @@ export default function UsersPage() {
                 >
                   <td style={{ fontWeight: 600, color: 'var(--accent-orange)' }}>{couple.pairName}</td>
                   <td>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      {couple.partners?.map((p) => (
-                        <div key={p.id} style={{ fontSize: '0.85rem' }}>
-                          <span style={{ fontWeight: 500 }}>{p.name}</span>
-                          <span style={{ color: 'var(--ink-muted)', marginLeft: '4px' }}>({p.phone})</span>
-                        </div>
-                      ))}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      {couple.partners?.map((p) => {
+                        const isActive = p.lastActiveAt
+                          ? (Date.now() - new Date(p.lastActiveAt).getTime()) < 7 * 24 * 60 * 60 * 1000
+                          : false;
+                        return (
+                          <div key={p.id} style={{ fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 600 }}>{p.name || '—'}</span>
+                            {p.phone ? (
+                              <span style={{ color: 'var(--ink-muted)', fontFamily: 'monospace', fontSize: '0.78rem', background: '#f4f4f4', borderRadius: '4px', padding: '1px 5px' }}>
+                                {p.phone}
+                              </span>
+                            ) : (
+                              <span style={{ color: '#aaa', fontSize: '0.75rem', fontStyle: 'italic' }}>no phone</span>
+                            )}
+                            <span style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 600,
+                              padding: '1px 6px',
+                              borderRadius: '99px',
+                              background: isActive ? '#e6f4ea' : '#f5f5f5',
+                              color: isActive ? '#2d7a3a' : '#999',
+                              border: `1px solid ${isActive ? '#b2dfb9' : '#e0e0e0'}`,
+                              whiteSpace: 'nowrap',
+                            }}>
+                              {isActive ? '● Active' : '○ Inactive'}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </td>
                   <td>{couple.city}</td>
@@ -485,12 +508,36 @@ export default function UsersPage() {
                         <span>Banned {formatDate(selectedCouple.bannedAt)}{selectedCouple.banReason ? ` — ${selectedCouple.banReason}` : ''}</span>
                       </div>
                     )}
-                    <div className="partnersBadgeRow">
-                      {selectedCouple.partners?.map(p => (
-                        <span key={p.id} className="partnerBadge">
-                          <User size={10} /> {p.name}
-                        </span>
-                      ))}
+                    <div className="partnersBadgeRow" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px', marginTop: '6px' }}>
+                      {selectedCouple.partners?.map(p => {
+                        const isActive = p.lastActiveAt
+                          ? (Date.now() - new Date(p.lastActiveAt).getTime()) < 7 * 24 * 60 * 60 * 1000
+                          : false;
+                        return (
+                          <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span className="partnerBadge" style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)' }}>
+                              <User size={10} /> {p.name || '—'}
+                            </span>
+                            {p.phone ? (
+                              <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', background: 'rgba(255,255,255,0.15)', borderRadius: '4px', padding: '1px 6px', color: '#fff' }}>
+                                📱 {p.phone}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', fontStyle: 'italic' }}>no phone</span>
+                            )}
+                            <span style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              padding: '1px 7px',
+                              borderRadius: '99px',
+                              background: isActive ? '#22c55e' : 'rgba(255,255,255,0.2)',
+                              color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
+                            }}>
+                              {isActive ? '● Active' : '○ Inactive'}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                  </div>
               </div>
