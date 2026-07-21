@@ -34,6 +34,12 @@ export default function PromptsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
+  // Keep left form category and right list tab in sync
+  const setActiveCategory = (value: string) => {
+    setCategory(value);
+    setActiveTab(value as "chat_shortcut" | "group_prompt");
+  };
+
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!text.trim()) return;
@@ -101,7 +107,7 @@ export default function PromptsPage() {
                   <button
                     key={opt.value}
                     type="button"
-                    onClick={() => setCategory(opt.value)}
+                    onClick={() => setActiveCategory(opt.value)}
                     style={{
                       flex: 1,
                       padding: "0.6rem 1rem",
