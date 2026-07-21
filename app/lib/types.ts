@@ -7,6 +7,7 @@ export interface PromptItem {
   question: string;
   tags: string[];
   active: boolean;
+  sortOrder: number;
   createdAt: string;
 }
 

@@ -53,6 +53,8 @@ interface AdminContextType {
   // Actions
   addPrompt: (title: string, category: string) => Promise<void>;
   togglePrompt: (id: string) => Promise<void>;
+  editPrompt: (id: string, title: string) => Promise<void>;
+  reorderPrompts: (ids: string[]) => Promise<void>;
   deletePrompt: (id: string) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   deleteCouple: (id: string) => Promise<void>;
@@ -248,6 +250,53 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
       console.error("Delete Prompt Error:", err);
       silentRefresh(token);
       toast("Failed to delete prompt.", "error");
+    }
+  };
+
+  const editPrompt = async (id: string, title: string) => {
+    if (!token) return;
+    const prev = prompts.find((p) => p.id === id)?.title ?? "";
+    setPrompts((ps) => ps.map((p) => (p.id === id ? { ...p, title } : p)));
+    try {
+      const res = await fetch(`${API_URL}/prompts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title }),
+      });
+      if (res.ok) toast("Prompt updated.", "success");
+      else {
+        setPrompts((ps) => ps.map((p) => (p.id === id ? { ...p, title: prev } : p)));
+        toast("Failed to update prompt.", "error");
+      }
+    } catch (err) {
+      console.error("Edit Prompt Error:", err);
+      setPrompts((ps) => ps.map((p) => (p.id === id ? { ...p, title: prev } : p)));
+      toast("Failed to update prompt.", "error");
+    }
+  };
+
+  const reorderPrompts = async (ids: string[]) => {
+    if (!token) return;
+    // Optimistic: update sortOrder locally
+    setPrompts((ps) => {
+      const ordered = [...ps].sort((a, b) => {
+        const ai = ids.indexOf(a.id);
+        const bi = ids.indexOf(b.id);
+        // items not in ids array stay at the end
+        return (ai === -1 ? 9999 : ai) - (bi === -1 ? 9999 : bi);
+      });
+      return ordered.map((p, i) => ({ ...p, sortOrder: i }));
+    });
+    try {
+      const res = await fetch(`${API_URL}/prompts/reorder`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) { silentRefresh(token); toast("Failed to reorder prompts.", "error"); }
+    } catch (err) {
+      console.error("Reorder Prompts Error:", err);
+      silentRefresh(token);
     }
   };
 
@@ -528,6 +577,8 @@ export function AdminDataProvider({ children }: { children: ReactNode }) {
         logout,
         addPrompt,
         togglePrompt,
+        editPrompt,
+        reorderPrompts,
         deletePrompt,
         deleteUser,
         deleteCouple,
